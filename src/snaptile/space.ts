@@ -93,8 +93,22 @@ function hasColumn(placed: Piece[], x: number, y: number, z: number) {
   return placed.some((piece) => piece.plane === "floor" && piece.x === x && piece.z === z && piece.y <= y);
 }
 
+function hasWall(placed: Piece[], plane: Plane, x: number, y: number, z: number) {
+  return placed.some((piece) => piece.plane === plane && piece.x === x && piece.y === y && piece.z === z);
+}
+
 function capped(placed: Piece[], x: number, y: number, z: number) {
   return hasFloor(placed, x, y + 1, z) && hasColumn(placed, x, y, z);
+}
+
+/** Ridge runs along the long side of the top floor, so slopes do not stick out every wall. */
+function ridgeAxis(placed: Piece[]): "x" | "z" {
+  const floors = placed.filter((piece) => piece.plane === "floor");
+  const top = floors.reduce((highest, piece) => Math.max(highest, piece.y), 0);
+  const caps = floors.filter((piece) => piece.y === top);
+  const xs = new Set(caps.map((piece) => piece.x));
+  const zs = new Set(caps.map((piece) => piece.z));
+  return xs.size >= zs.size ? "x" : "z";
 }
 
 /** Lids first when laying flats. A roof is kept as a whole pair, never one slope. */
@@ -136,9 +150,17 @@ export function sockets(placed: Piece[], shape: Shape, color: TileColor, cutout:
   const out: Piece[] = [];
   const hole = shape === "square" ? cutout : "none";
   const base = { shape, color, cutout: hole, rot: 0 as const };
+  const axis = ridgeAxis(placed);
   const cap = (x: number, y: number, z: number) => {
     if (!hasColumn(placed, x, y, z)) return;
     add(out, { ...base, shape: "square", cutout: "none", plane: "floor", lean: 1, x, y: y + 1, z }, used);
+  };
+  const roofOn = (plane: "roofx" | "roofz", lean: -1 | 1, x: number, y: number, z: number, cellX: number, cellZ: number) => {
+    if (plane === "roofx" ? axis !== "x" : axis !== "z") return;
+    if (!capped(placed, cellX, y, cellZ)) return;
+    const hinge = plane === "roofx" ? hasWall(placed, "wallz", x, y + 1, z) : hasWall(placed, "wallx", x, y + 1, z);
+    if (hinge) return;
+    add(out, { ...base, plane, lean, x, y, z }, used);
   };
   for (const tile of placed) {
     if (tile.plane === "floor") {
@@ -157,23 +179,15 @@ export function sockets(placed: Piece[], shape: Shape, color: TileColor, cutout:
         add(out, { ...base, plane: "wallx", lean: 1, x: tile.x, y: tile.y, z: tile.z - 1 }, used);
         cap(tile.x, tile.y, tile.z);
         cap(tile.x + 1, tile.y, tile.z);
-        if (capped(placed, tile.x, tile.y, tile.z)) {
-          add(out, { ...base, plane: "roofz", lean: -1, x: tile.x, y: tile.y, z: tile.z }, used);
-        }
-        if (capped(placed, tile.x + 1, tile.y, tile.z)) {
-          add(out, { ...base, plane: "roofz", lean: 1, x: tile.x, y: tile.y, z: tile.z }, used);
-        }
+        roofOn("roofz", -1, tile.x, tile.y, tile.z, tile.x, tile.z);
+        roofOn("roofz", 1, tile.x, tile.y, tile.z, tile.x + 1, tile.z);
       } else {
         add(out, { ...base, plane: "wallz", lean: 1, x: tile.x + 1, y: tile.y, z: tile.z }, used);
         add(out, { ...base, plane: "wallz", lean: 1, x: tile.x - 1, y: tile.y, z: tile.z }, used);
         cap(tile.x, tile.y, tile.z);
         cap(tile.x, tile.y, tile.z + 1);
-        if (capped(placed, tile.x, tile.y, tile.z)) {
-          add(out, { ...base, plane: "roofx", lean: -1, x: tile.x, y: tile.y, z: tile.z }, used);
-        }
-        if (capped(placed, tile.x, tile.y, tile.z + 1)) {
-          add(out, { ...base, plane: "roofx", lean: 1, x: tile.x, y: tile.y, z: tile.z }, used);
-        }
+        roofOn("roofx", -1, tile.x, tile.y, tile.z, tile.x, tile.z);
+        roofOn("roofx", 1, tile.x, tile.y, tile.z, tile.x, tile.z + 1);
       }
     } else if (tile.plane === "roofx" || tile.plane === "roofz") {
       const stepX = tile.plane === "roofx" ? 1 : 0;
@@ -183,9 +197,7 @@ export function sockets(placed: Piece[], shape: Shape, color: TileColor, cutout:
         const z = tile.z + sign * stepZ;
         const cellX = tile.plane === "roofz" && tile.lean === 1 ? x + 1 : x;
         const cellZ = tile.plane === "roofx" && tile.lean === 1 ? z + 1 : z;
-        if (capped(placed, cellX, tile.y, cellZ)) {
-          add(out, { ...base, plane: tile.plane, lean: tile.lean, x, y: tile.y, z }, used);
-        }
+        roofOn(tile.plane, tile.lean, x, tile.y, z, cellX, cellZ);
       }
     }
   }
