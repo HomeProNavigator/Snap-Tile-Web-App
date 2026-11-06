@@ -76,6 +76,7 @@ function TileMesh({
   ghost,
   bright,
   guide,
+  hidden,
   selected,
   onPick,
 }: {
@@ -83,11 +84,12 @@ function TileMesh({
   ghost?: boolean;
   bright?: boolean;
   guide?: boolean;
+  hidden?: boolean;
   selected?: boolean;
   onPick?: () => void;
 }) {
   const placedColor = TILE_HEX[piece.color];
-  const color = ghost && (!guide || bright) ? "#ffffff" : placedColor;
+  const color = ghost && !hidden && (!guide || bright) ? "#ffffff" : placedColor;
   const geo =
     piece.shape === "triangle" ? geos.triangle : piece.cutout === "window" ? geos.window : piece.cutout === "door" ? geos.door : geos.square;
   const edge = piece.shape === "triangle" ? edges.triangle : piece.cutout === "window" ? edges.window : piece.cutout === "door" ? edges.door : edges.square;
@@ -110,20 +112,23 @@ function TileMesh({
           color={color}
           roughness={0.12}
           metalness={0.02}
-          clearcoat={ghost ? 0.2 : 0.8}
+          clearcoat={ghost && !hidden ? 0.2 : 0.8}
           transparent
-          opacity={ghost ? (guide ? (bright ? 0.92 : 0.4) : 0.72) : 0.94}
-          emissive={selected || (ghost && bright && guide) ? "#ffffff" : "#000000"}
-          emissiveIntensity={selected ? 0.28 : ghost && bright && guide ? 0.16 : 0}
+          opacity={hidden ? 0 : ghost ? (guide ? (bright ? 0.92 : 0.4) : 0.72) : 0.94}
+          emissive={selected || (ghost && bright && guide && !hidden) ? "#ffffff" : "#000000"}
+          emissiveIntensity={selected ? 0.28 : ghost && bright && guide && !hidden ? 0.16 : 0}
+          depthWrite={!hidden}
           side={THREE.DoubleSide}
           polygonOffset
           polygonOffsetFactor={ghost ? -2 : 1}
           polygonOffsetUnits={1}
         />
       </mesh>
-      <lineSegments geometry={edge} raycast={() => null}>
-        <lineBasicMaterial color={rim} transparent opacity={0.85} />
-      </lineSegments>
+      {hidden ? null : (
+        <lineSegments geometry={edge} raycast={() => null}>
+          <lineBasicMaterial color={rim} transparent opacity={0.85} />
+        </lineSegments>
+      )}
     </group>
   );
 }
@@ -136,6 +141,7 @@ function TileView({
   ghost,
   bright,
   guide,
+  hidden,
   selected,
   onPick,
   seat,
@@ -147,11 +153,12 @@ function TileView({
   ghost?: boolean;
   bright?: boolean;
   guide?: boolean;
+  hidden?: boolean;
   selected?: boolean;
   onPick?: () => void;
   seat?: number;
 }) {
-  const mesh = <TileMesh piece={piece} ghost={ghost} bright={bright} guide={guide} selected={selected} onPick={onPick} />;
+  const mesh = <TileMesh piece={piece} ghost={ghost} bright={bright} guide={guide} hidden={hidden} selected={selected} onPick={onPick} />;
   const at = (x: number, y: number, z: number): [number, number, number] => [x - ox, y - oy, z - oz];
   if (piece.plane === "floor") {
     return (
@@ -265,12 +272,16 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
     const count = guidanceCount(puzzle.pieces.length, puzzle.id);
     const guided = new Set(puzzle.pieces.slice(0, count).map(pieceKey));
     if (hintSpot) guided.add(hintSpot);
-    return puzzle.pieces.filter((target) => {
-      if (placed.some((have) => samePiece(have, target))) return false;
-      if (guided.has(pieceKey(target))) return true;
-      return Boolean(held && sameKind(held, target));
-    });
-  }, [puzzle, placed, quiet, hintSpot, held]);
+    return puzzle.pieces.filter((target) => guided.has(pieceKey(target)) && !placed.some((have) => samePiece(have, target)));
+  }, [puzzle, placed, quiet, hintSpot]);
+
+  const silent = useMemo(() => {
+    if (!puzzle || quiet || !held) return [];
+    const shown = new Set(ghosts.map(pieceKey));
+    return puzzle.pieces.filter(
+      (target) => sameKind(held, target) && !shown.has(pieceKey(target)) && !placed.some((have) => samePiece(have, target)),
+    );
+  }, [puzzle, placed, quiet, held, ghosts]);
 
   const pads = useMemo(() => {
     if (puzzle || quiet) return [];
@@ -339,6 +350,19 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
           guide
           seat={roofHingeY(piece, family)}
           bright={Boolean(held && sameKind(held, piece))}
+          onPick={() => placeTarget(piece)}
+        />
+      ))}
+      {silent.map((piece) => (
+        <TileView
+          key={`q-${pieceKey(piece)}`}
+          piece={piece}
+          ox={box.ox}
+          oy={box.oy}
+          oz={box.oz}
+          ghost
+          hidden
+          seat={roofHingeY(piece, family)}
           onPick={() => placeTarget(piece)}
         />
       ))}
