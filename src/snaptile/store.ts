@@ -78,6 +78,7 @@ type State = Persisted & {
   dismissOffer: () => void;
   saveBuild: () => void;
   loadBuild: (id: string) => void;
+  deleteBuild: (id: string) => void;
   clearNotice: () => void;
 };
 
@@ -448,6 +449,13 @@ export const useSnap = create<State>((set, get) => ({
     const found = get().saved.find((b) => b.id === id);
     if (!found) return;
     set({ view: "free", puzzleId: null, placed: found.pieces, selected: null, notice: null });
+  },
+
+  deleteBuild: (id) => {
+    const saved = get().saved.filter((build) => build.id !== id);
+    set({ saved });
+    persist({ ...pick(get()), saved });
+    playTone("tap");
   },
 
   clearNotice: () => set({ notice: null }),

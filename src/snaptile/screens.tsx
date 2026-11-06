@@ -707,6 +707,7 @@ function Account() {
   const setSound = useSnap((s) => s.setSound);
   const saved = useSnap((s) => s.saved);
   const loadBuild = useSnap((s) => s.loadBuild);
+  const deleteBuild = useSnap((s) => s.deleteBuild);
   const signOut = useSnap((s) => s.signOut);
   const resetDevice = useSnap((s) => s.resetDevice);
   const notice = useSnap((s) => s.notice);
@@ -738,9 +739,14 @@ function Account() {
       {saved.length > 0 ? (
         <div className="snap-saved">
           {saved.map((build) => (
-            <button key={build.id} onClick={() => loadBuild(build.id)}>
-              {build.name} · {build.pieces.length} tiles
-            </button>
+            <div key={build.id} className="snap-saved-row">
+              <button onClick={() => loadBuild(build.id)}>
+                {build.name} · {build.pieces.length} tiles
+              </button>
+              <button className="snap-icon" aria-label={`Delete ${build.name}`} onClick={() => deleteBuild(build.id)}>
+                <Trash2 />
+              </button>
+            </div>
           ))}
         </div>
       ) : (

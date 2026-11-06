@@ -868,6 +868,16 @@
   margin: 8px 0;
 }
 
+.snap-saved-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.snap-saved-row > button:first-child {
+  flex: 1;
+}
+
 .snap-saved button {
   min-height: 48px;
   text-align: left;
@@ -876,6 +886,10 @@
   background: var(--color-surface);
   padding: 10px 12px;
   font-weight: 700;
+}
+
+.snap-saved-row .snap-icon {
+  color: var(--color-warn);
 }
 
 .snap-modal {
