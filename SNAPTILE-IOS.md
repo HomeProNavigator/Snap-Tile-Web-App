@@ -1,4 +1,4 @@
-# SnapTile iOS
+# Buildlings iOS
 
 This is the complete iOS version of the web game. It is the same app, not a rewrite.
 
@@ -70,7 +70,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "com.snaptile.play",
-  appName: "SnapTile",
+  appName: "Buildlings",
   webDir: "dist",
   backgroundColor: "#e7e4fb",
   ios: {
@@ -192,7 +192,7 @@ restorePlan: async () => {
   if (isNativeApp()) {
     const restored = await restoreNative();
     if (!restored || restored === "free") {
-      set({ notice: "No SnapTile purchase was found on this Apple ID." });
+      set({ notice: "No Buildlings purchase was found on this Apple ID." });
       return;
     }
     set({ tier: restored, purchased: restored, notice: "Plan restored on this device." });
@@ -388,7 +388,7 @@ Set these keys. Leave out camera, microphone, location, contacts, tracking, and 
 
 ```xml
 <key>CFBundleDisplayName</key>
-<string>SnapTile</string>
+<string>Buildlings</string>
 <key>CFBundleIdentifier</key>
 <string>com.snaptile.play</string>
 <key>CFBundleShortVersionString</key>
@@ -461,7 +461,7 @@ Use this in Xcode (Editor, StoreKit, Create Configuration File, then replace the
 
 ```json
 {
-  "identifier": "SnapTile",
+  "identifier": "Buildlings",
   "nonRenewingSubscriptions": [],
   "products": [],
   "settings": { "_failTransactionsEnabled": false, "_storeKitErrors": [] },
@@ -469,7 +469,7 @@ Use this in Xcode (Editor, StoreKit, Create Configuration File, then replace the
     {
       "id": "3",
       "localizations": [],
-      "name": "SnapTile Plans",
+      "name": "Buildlings Plans",
       "subscriptions": [
         {
           "adHocOffers": [],
@@ -559,7 +559,7 @@ Then run again from Xcode. `cap sync` copies `dist` into the app. Do not edit fi
 
 ## 10. App Store Connect
 
-Create the app as **SnapTile**, primary category **Games**, secondary **Education**. Do **not** turn on Made for Kids. Rate it 4+, and do not describe it as an app for children in the store text.
+Create the app as **Buildlings**, primary category **Games**, secondary **Education**. Do **not** turn on Made for Kids. Rate it 4+, and do not describe it as an app for children in the store text.
 
 Answer the questionnaire like this:
 

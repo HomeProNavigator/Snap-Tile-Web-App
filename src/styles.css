@@ -153,6 +153,13 @@
   font-size: 0.8rem;
 }
 
+.snap-tag {
+  margin: 2px 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
 .snap-screen h1,
 .snap-play h1,
 .snap-sheet h2 {

@@ -3,7 +3,7 @@ import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "SnapTile";
+const APP_NAME = "Buildlings";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -13,7 +13,7 @@ export const Route = createRootRoute({
       { title: APP_NAME },
       {
         name: "description",
-        content: "A calm kids app for building with frosted magnetic tiles.",
+        content: "Build houses, castles, and anything else with magnetic tiles.",
       },
       { name: "theme-color", content: "#e7e4fb" },
     ],

@@ -1,4 +1,4 @@
-# SnapTile
+# Buildlings
 
 Magnetic-tile builder for kids. The website and the iPhone app are the same game.
 

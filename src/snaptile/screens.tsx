@@ -100,7 +100,7 @@ function Onboarding() {
   const setName = useSnap((s) => s.setName);
   const finish = useSnap((s) => s.finishOnboarding);
   const pages = [
-    { title: "Snap the tiles", body: "Squares and triangles click together. Build a castle, or follow a puzzle." },
+    { title: "Build with tiles", body: "Squares and triangles click together. Build a castle, a boat, or follow a puzzle." },
     {
       title: "Up, down, and across",
       body: "Pick one tile. Choose flat, wall, or roof, then tap a single outline. One tap adds one piece.",
@@ -111,7 +111,8 @@ function Onboarding() {
     const page = pages[step]!;
     return (
       <section className="snap-screen snap-center">
-        <p className="snap-kicker">SnapTile</p>
+        <p className="snap-kicker">Buildlings</p>
+        <p className="snap-tag">Magnetic tiles</p>
         <h1>{page.title}</h1>
         <p className="snap-lead">{page.body}</p>
         <button className="snap-primary snap-wide" onClick={() => setStep(step + 1)}>
@@ -158,7 +159,8 @@ function Home() {
     <section className="snap-screen snap-home">
       <header className="snap-top">
         <div>
-          <p className="snap-kicker">SnapTile</p>
+          <p className="snap-kicker">Buildlings</p>
+          <p className="snap-tag">Magnetic tiles</p>
           <h1>{name ? `Hi, ${name}` : "Hi, builder"}</h1>
         </div>
         <button className="snap-icon" aria-label={sound ? "Turn sound off" : "Turn sound on"} onClick={() => setSound(!sound)}>
@@ -719,19 +721,19 @@ function PrivacyPolicy() {
         </div>
       </header>
       <div className="snap-doc-body">
-        <p>SnapTile is a puzzle and building game from SnapTile, Henderson, Nevada, United States. This policy explains what happens to information when you use the iPhone app.</p>
+        <p>Buildlings is a puzzle and building game from Buildlings, Henderson, Nevada, United States. This policy explains what happens to information when you use the iPhone app.</p>
         <h2>What stays on your device</h2>
-        <p>The app can store a first name, puzzle progress, badges, the sound setting, and saved builds. You do not have to enter a name. This information stays on the device. SnapTile does not receive it, does not sell it, and does not use it for advertising.</p>
+        <p>The app can store a first name, puzzle progress, badges, the sound setting, and saved builds. You do not have to enter a name. This information stays on the device. Buildlings does not receive it, does not sell it, and does not use it for advertising.</p>
         <h2>What we do not collect</h2>
-        <p>SnapTile does not collect location, contacts, photos, advertising identifiers, or analytics. There is no account server and there are no ads.</p>
+        <p>Buildlings does not collect location, contacts, photos, advertising identifiers, or analytics. There is no account server and there are no ads.</p>
         <h2>Payments</h2>
-        <p>Subscriptions are processed by Apple. Apple receives the payment details. SnapTile does not receive your card number or your Apple ID password.</p>
+        <p>Subscriptions are processed by Apple. Apple receives the payment details. Buildlings does not receive your card number or your Apple ID password.</p>
         <h2>Children</h2>
-        <p>The game can be played by children with a parent. A name, if one is typed in, never leaves the device. We do not send personal information about a child to SnapTile, because the app does not send that information to us at all.</p>
+        <p>The game can be played by children with a parent. A name, if one is typed in, never leaves the device. We do not send personal information about a child to Buildlings, because the app does not send that information to us at all.</p>
         <h2>How to delete it</h2>
         <p>Open Account and tap Erase this device. That removes the name, progress, and saved builds from that device. Uninstalling the app removes them too. There is no server copy to delete.</p>
         <h2>Your rights</h2>
-        <p>If you are in the European Economic Area or the United Kingdom, you can ask for access, correction, or deletion of personal data a company holds about you. SnapTile does not hold a copy. You erase the device yourself. Questions: {SUPPORT_EMAIL}.</p>
+        <p>If you are in the European Economic Area or the United Kingdom, you can ask for access, correction, or deletion of personal data a company holds about you. Buildlings does not hold a copy. You erase the device yourself. Questions: {SUPPORT_EMAIL}.</p>
         <p>
           <a href={PRIVACY_URL} target="_blank" rel="noreferrer">
             Open this policy on the web
@@ -757,14 +759,14 @@ function TermsOfUse() {
         </div>
       </header>
       <div className="snap-doc-body">
-        <p>These terms are an agreement between you and SnapTile, Henderson, Nevada, United States, not with Apple. Apple is not responsible for the app or its content.</p>
+        <p>These terms are an agreement between you and Buildlings, Henderson, Nevada, United States, not with Apple. Apple is not responsible for the app or its content.</p>
         <h2>The license</h2>
-        <p>You receive a personal, non-transferable license to use SnapTile on Apple devices you own or control. You may not copy, sell, or reverse engineer the app except where the law allows it.</p>
+        <p>You receive a personal, non-transferable license to use Buildlings on Apple devices you own or control. You may not copy, sell, or reverse engineer the app except where the law allows it.</p>
         <h2>Plans</h2>
         <p>Free includes 10 tiles and puzzles 1 through 10. Builder renews every month and includes 50 tiles and puzzles 1 through 50. Master Builder renews every month and includes 80 tiles and all 100 puzzles. Unlimited Yearly renews every year and includes 80 tiles and all 100 puzzles. The price on the Plans screen is the price Apple charges in your currency.</p>
         <p>Payment is charged to your Apple ID when you confirm. A paid plan renews for the same length and price unless you cancel at least 24 hours before the period ends. Apple charges the renewal within 24 hours before the period ends. Manage or cancel in your Apple ID subscriptions. Deleting the app does not cancel a plan. The paid plans are one group, so only one can be active. When a plan ends, the app returns to Free. Refunds are handled by Apple.</p>
         <h2>Support</h2>
-        <p>SnapTile, not Apple, is responsible for the app, for support, and for product claims. The app is provided as is. If it fails an applicable warranty, you may ask Apple for a refund of the app price. Apple has no other warranty duty for the app.</p>
+        <p>Buildlings, not Apple, is responsible for the app, for support, and for product claims. The app is provided as is. If it fails an applicable warranty, you may ask Apple for a refund of the app price. Apple has no other warranty duty for the app.</p>
         <h2>Apple</h2>
         <p>Apple and Apple's subsidiaries are third-party beneficiaries of these terms and may enforce them. Questions: {SUPPORT_EMAIL}. These terms follow the laws of the State of Nevada, except where the law where you live says otherwise.</p>
         <p>

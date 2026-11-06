@@ -1,5 +1,5 @@
 {
-  "identifier": "SnapTile",
+  "identifier": "Buildlings",
   "nonRenewingSubscriptions": [],
   "products": [],
   "settings": { "_failTransactionsEnabled": false, "_storeKitErrors": [] },
@@ -7,7 +7,7 @@
     {
       "id": "3",
       "localizations": [],
-      "name": "SnapTile Plans",
+      "name": "Buildlings Plans",
       "subscriptions": [
         {
           "adHocOffers": [],

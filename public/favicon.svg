@@ -1,5 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="SnapTile">
-  <rect width="32" height="32" rx="8" fill="#E7DFFF"/>
-  <rect x="3.5" y="11" width="16" height="16" rx="3.5" fill="#C9B6FF"/>
-  <polygon points="15,3.5 28.5,17 15,17" fill="#FF7A6A"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Buildlings">
+  <rect width="32" height="32" rx="8" fill="#F4EFE6"/>
+  <polygon points="16,3.5 28,14 4,14" fill="#FF7A6A"/>
+  <rect x="5.5" y="14.5" width="10" height="13" rx="1.6" fill="#7EB6FF"/>
+  <rect x="16.5" y="14.5" width="10" height="13" rx="1.6" fill="#FFD36E"/>
 </svg>

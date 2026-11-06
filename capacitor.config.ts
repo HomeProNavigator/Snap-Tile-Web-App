@@ -7,7 +7,7 @@ const live = process.env.CAP_SERVER_URL;
 
 const config: CapacitorConfig = {
   appId: "com.snaptile.play",
-  appName: "SnapTile",
+  appName: "Buildlings",
   webDir: "dist-ios",
   backgroundColor: "#f4efe6",
   ios: {

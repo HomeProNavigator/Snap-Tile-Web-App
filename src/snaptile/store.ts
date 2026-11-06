@@ -221,7 +221,7 @@ export const useSnap = create<State>((set, get) => ({
       void restoreNative()
         .then((restored) => {
           if (!restored || restored === "free") {
-            set({ notice: "No SnapTile purchase was found on this Apple ID." });
+            set({ notice: "No Buildlings purchase was found on this Apple ID." });
             return;
           }
           set({ tier: restored, purchased: restored, notice: "Plan restored on this device." });
