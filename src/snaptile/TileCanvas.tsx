@@ -11,6 +11,7 @@ const geos = {
   square: makeSquare("none"),
   window: makeSquare("window"),
   door: makeSquare("door"),
+  arch: makeSquare("arch"),
   triangle: makeTriangle(),
   right: makeRight(),
 };
@@ -49,6 +50,18 @@ function makeSquare(cutout: Cutout) {
     hole.closePath();
     shape.holes.push(hole);
   }
+  if (cutout === "arch") {
+    const hole = new THREE.Path();
+    hole.moveTo(-0.18, -s);
+    hole.lineTo(-0.18, 0);
+    for (let i = 0; i <= 8; i++) {
+      const angle = Math.PI - (i / 8) * Math.PI;
+      hole.lineTo(Math.cos(angle) * 0.18, Math.sin(angle) * 0.18);
+    }
+    hole.lineTo(0.18, -s);
+    hole.closePath();
+    shape.holes.push(hole);
+  }
   const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.09, bevelEnabled: false });
   geo.translate(0, 0, -0.045);
   return geo;
@@ -82,6 +95,7 @@ const edges = {
   square: new THREE.EdgesGeometry(geos.square, 20),
   window: new THREE.EdgesGeometry(geos.window, 20),
   door: new THREE.EdgesGeometry(geos.door, 20),
+  arch: new THREE.EdgesGeometry(geos.arch, 20),
   triangle: new THREE.EdgesGeometry(geos.triangle, 20),
   right: new THREE.EdgesGeometry(geos.right, 20),
 };
@@ -135,8 +149,27 @@ function TileMesh({
   const placedColor = TILE_HEX[piece.color];
   const color = ghost && !hidden && (!guide || bright) ? "#ffffff" : placedColor;
   const geo =
-    piece.shape === "right" ? geos.right : piece.shape === "triangle" ? geos.triangle : piece.cutout === "window" ? geos.window : piece.cutout === "door" ? geos.door : geos.square;
-  const edge = piece.shape === "right" ? edges.right : piece.shape === "triangle" ? edges.triangle : piece.cutout === "door" ? edges.door : edges.square;
+    piece.shape === "right"
+      ? geos.right
+      : piece.shape === "triangle"
+        ? geos.triangle
+        : piece.cutout === "window"
+          ? geos.window
+          : piece.cutout === "door"
+            ? geos.door
+            : piece.cutout === "arch"
+              ? geos.arch
+              : geos.square;
+  const edge =
+    piece.shape === "right"
+      ? edges.right
+      : piece.shape === "triangle"
+        ? edges.triangle
+        : piece.cutout === "door"
+          ? edges.door
+          : piece.cutout === "arch"
+            ? edges.arch
+            : edges.square;
   const rim = ghost ? "#5c567f" : rimOf(color);
   return (
     <group>
@@ -205,6 +238,36 @@ function TileView({
 }) {
   const mesh = <TileMesh piece={piece} ghost={ghost} bright={bright} guide={guide} hidden={hidden} selected={selected} onPick={onPick} />;
   const at = (x: number, y: number, z: number): [number, number, number] => [x - ox, y - oy, z - oz];
+  if (piece.shape === "wheel") {
+    const outward = 0.34;
+    const y = piece.y + 0.22;
+    const pos = piece.plane === "wallz" ? at(piece.x, y, piece.z + 0.5 + piece.lean * outward) : at(piece.x + 0.5 + piece.lean * outward, y, piece.z);
+    const spin = piece.plane === "wallz" ? ([Math.PI / 2, 0, 0] as const) : ([0, 0, Math.PI / 2] as const);
+    return (
+      <mesh
+        position={pos}
+        rotation={spin}
+        onClick={
+          onPick
+            ? (event) => {
+                event.stopPropagation();
+                if (orbitLock.moved) return;
+                onPick();
+              }
+            : undefined
+        }
+      >
+        <cylinderGeometry args={[0.22, 0.22, 0.12, 24]} />
+        <meshPhysicalMaterial
+          color={ghost && !hidden ? "#ffffff" : TILE_HEX[piece.color]}
+          roughness={0.35}
+          transparent
+          opacity={hidden ? 0 : ghost ? 0.72 : 1}
+          depthWrite={!hidden}
+        />
+      </mesh>
+    );
+  }
   if (piece.shape === "right" && piece.plane !== "roofx" && piece.plane !== "roofz") {
     const step = piece.rot % 8;
     const spin = Math.floor(step / 2) % 4;

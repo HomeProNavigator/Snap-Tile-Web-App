@@ -14,7 +14,7 @@ function BadgeArt({ id, earned }: { id: string; earned: boolean }) {
   return <img className={earned ? "snap-badge-art" : "snap-badge-art is-locked"} src={`${import.meta.env.BASE_URL}badges/${id}.jpg?v=3`} alt="" />;
 }
 
-function TileGlyph({ kind, size = 36 }: { kind: "square" | "triangle" | "right" | "flat" | "wall" | "roof" | "solid" | "window" | "door"; size?: number }) {
+function TileGlyph({ kind, size = 36 }: { kind: "square" | "triangle" | "right" | "flat" | "wall" | "roof" | "solid" | "window" | "door" | "arch" | "wheel"; size?: number }) {
   const props = { width: size, height: size, viewBox: "0 0 36 36", "aria-hidden": true as const };
   if (kind === "right") {
     return (
@@ -67,6 +67,22 @@ function TileGlyph({ kind, size = 36 }: { kind: "square" | "triangle" | "right" 
         <rect x="4" y="4" width="28" height="28" rx="3" fill="currentColor" />
         <path d="M13 32V15h12v17" fill="#efeaff" />
         <circle cx="21" cy="24" r="1.5" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (kind === "arch") {
+    return (
+      <svg {...props}>
+        <rect x="4" y="4" width="28" height="28" rx="3" fill="currentColor" />
+        <path d="M12 32V18a6 6 0 0 1 12 0v14" fill="#efeaff" />
+      </svg>
+    );
+  }
+  if (kind === "wheel") {
+    return (
+      <svg {...props}>
+        <circle cx="18" cy="18" r="12" fill="currentColor" />
+        <circle cx="18" cy="18" r="4" fill="#efeaff" />
       </svg>
     );
   }
@@ -469,7 +485,7 @@ function PuzzleTray({ puzzlePieces }: { puzzlePieces: Piece[] }) {
             onClick={() => setHeld({ shape: piece.shape, color: piece.color, cutout: piece.cutout })}
           >
             <span
-              className={piece.shape === "triangle" ? "snap-mini is-tri" : piece.shape === "right" ? "snap-mini is-right" : "snap-mini"}
+              className={piece.shape === "triangle" ? "snap-mini is-tri" : piece.shape === "wheel" ? "snap-mini is-wheel" : piece.shape === "right" ? "snap-mini is-right" : "snap-mini"}
               style={
                 piece.shape === "triangle"
                   ? { borderBottomColor: TILE_HEX[piece.color] }
@@ -477,7 +493,7 @@ function PuzzleTray({ puzzlePieces }: { puzzlePieces: Piece[] }) {
               }
             />
             <span>{left}</span>
-            {piece.cutout === "window" || piece.cutout === "door" ? <TileGlyph kind={piece.cutout} size={22} /> : null}
+            {piece.shape === "wheel" ? <TileGlyph kind="wheel" size={22} /> : piece.cutout === "window" || piece.cutout === "door" || piece.cutout === "arch" ? <TileGlyph kind={piece.cutout} size={22} /> : null}
           </button>
         ))}
       </div>

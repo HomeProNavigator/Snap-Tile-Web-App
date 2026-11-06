@@ -9,6 +9,13 @@ export type Puzzle = {
 
 const COLORS: TileColor[] = ["coral", "gold", "mint", "sky", "lilac", "blush"];
 
+type Side = "n" | "s" | "e" | "w";
+type Roof = "flat" | "point";
+type Cell = { x: number; z: number; stories: number; roof: Roof; bare?: boolean };
+type Opening = { x: number; z: number; side: Side; story: number; cut: Cutout };
+type Wheels = "none" | "ends" | "all";
+type Spec = { name: string; cells: Cell[]; openings?: Opening[]; wheels?: Wheels };
+
 function tile(
   shape: Shape,
   plane: Piece["plane"],
@@ -22,546 +29,359 @@ function tile(
   return { shape, plane, x, y, z, color, lean, cutout, rot: 0 };
 }
 
-function tower(stories: number, wall: TileColor, roof: TileColor, base: TileColor): Piece[] {
-  const out: Piece[] = [tile("square", "floor", 0, 0, 0, base)];
-  for (let s = 0; s < stories; s++) {
-    const cut: Cutout = s === 0 ? "door" : s % 2 === 1 ? "window" : "none";
-    out.push(
-      tile("square", "wallx", 0, s, 0, wall, 1, cut),
-      tile("square", "wallx", -1, s, 0, wall),
-      tile("square", "wallz", 0, s, 0, wall, 1, s === 0 ? "window" : "none"),
-      tile("square", "wallz", 0, s, -1, wall),
-    );
-  }
-  const top = stories - 1;
-  out.push(
-    tile("triangle", "roofx", 0, top, 0, roof, -1),
-    tile("triangle", "roofx", 0, top, -1, roof, 1),
-    tile("triangle", "roofz", 0, top, 0, roof, -1),
-    tile("triangle", "roofz", -1, top, 0, roof, 1),
-  );
+function rect(x: number, z: number, w: number, d: number, stories: number, roof: Roof): Cell[] {
+  const out: Cell[] = [];
+  for (let ix = x; ix < x + w; ix++) for (let iz = z; iz < z + d; iz++) out.push({ x: ix, z: iz, stories, roof });
   return out;
 }
 
-function house(w: number, stories: number, wall: TileColor, roof: TileColor, base: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (let x = 0; x < w; x++) out.push(tile("square", "floor", x, 0, 0, base));
-  for (let s = 0; s < stories; s++) {
-    for (let x = 0; x < w; x++) {
-      out.push(tile("square", "wallz", x, s, 0, wall, 1, s === stories - 1 ? "window" : "none"));
-      out.push(tile("square", "wallz", x, s, -1, wall, 1, s === 0 && x === Math.floor(w / 2) ? "door" : "none"));
+function raise(cells: Cell[], x: number, z: number, stories: number, roof: Roof): Cell[] {
+  return cells.map((cell) => (cell.x === x && cell.z === z ? { ...cell, stories, roof } : cell));
+}
+
+function shell(spec: Spec, index: number): Piece[] {
+  const wall = COLORS[index % COLORS.length]!;
+  const roof = COLORS[(index + 2) % COLORS.length]!;
+  const base = COLORS[(index + 4) % COLORS.length]!;
+  const hub = COLORS[(index + 1) % COLORS.length]!;
+  const map = new Map(spec.cells.map((cell) => [`${cell.x},${cell.z}`, cell]));
+  const pieces: Piece[] = [];
+  const seen = new Set<string>();
+  const add = (piece: Piece) => {
+    const key = `${piece.shape}|${piece.plane}|${piece.x}|${piece.y}|${piece.z}|${piece.lean}|${piece.cutout}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    pieces.push(piece);
+  };
+  const neighbor = (cell: Cell, side: Side) => {
+    if (side === "n") return map.get(`${cell.x},${cell.z + 1}`);
+    if (side === "s") return map.get(`${cell.x},${cell.z - 1}`);
+    if (side === "e") return map.get(`${cell.x + 1},${cell.z}`);
+    return map.get(`${cell.x - 1},${cell.z}`);
+  };
+  const needs = (cell: Cell, side: Side, story: number) => {
+    if (cell.bare) return false;
+    const next = neighbor(cell, side);
+    if (!next || next.stories <= story) return true;
+    return cell.roof === "point" && story === cell.stories - 1;
+  };
+  const cut = (cell: Cell, side: Side, story: number): Cutout =>
+    spec.openings?.find((item) => item.x === cell.x && item.z === cell.z && item.side === side && item.story === story)?.cut ?? "none";
+
+  for (const cell of spec.cells) {
+    add(tile("square", "floor", cell.x, 0, cell.z, base));
+    if (cell.roof === "flat") add(tile("square", "floor", cell.x, cell.stories, cell.z, roof));
+    else {
+      const y = cell.stories - 1;
+      add(tile("triangle", "roofx", cell.x, y, cell.z, roof, -1));
+      add(tile("triangle", "roofx", cell.x, y, cell.z - 1, roof, 1));
+      add(tile("triangle", "roofz", cell.x, y, cell.z, roof, -1));
+      add(tile("triangle", "roofz", cell.x - 1, y, cell.z, roof, 1));
     }
-    out.push(tile(s === stories - 1 ? "triangle" : "square", "wallx", -1, s, 0, wall));
-    out.push(tile(s === stories - 1 ? "triangle" : "square", "wallx", w - 1, s, 0, wall));
-  }
-  const top = stories - 1;
-  for (let x = 0; x < w; x++) {
-    out.push(tile("triangle", "roofx", x, top, 0, roof, -1));
-    out.push(tile("triangle", "roofx", x, top, -1, roof, 1));
-  }
-  return out;
-}
-
-function tent(len: number, cloth: TileColor, roof: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (let x = 0; x < len; x++) {
-    out.push(tile("square", "floor", x, 0, 0, cloth));
-    out.push(tile("triangle", "roofx", x, 0, 0, roof, -1));
-    out.push(tile("triangle", "roofx", x, 0, -1, roof, 1));
-  }
-  out.push(tile("triangle", "wallx", -1, 0, 0, cloth));
-  out.push(tile("triangle", "wallx", len - 1, 0, 0, cloth));
-  return out;
-}
-
-function hall(w: number, d: number, wall: TileColor, roof: TileColor, base: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (let x = 0; x < w; x++) {
-    for (let z = 0; z < d; z++) out.push(tile("square", "floor", x, 0, z, base));
-  }
-  for (let x = 0; x < w; x++) {
-    out.push(tile("square", "wallz", x, 0, -1, wall, 1, x === 0 ? "door" : "none"));
-    out.push(tile("square", "wallz", x, 0, d - 1, wall, 1, "window"));
-    out.push(tile("triangle", "roofx", x, 0, -1, roof, 1));
-    out.push(tile("triangle", "roofx", x, 0, d - 1, roof, -1));
-  }
-  for (let z = 0; z < d; z++) {
-    out.push(tile("square", "wallx", -1, 0, z, wall));
-    out.push(tile("square", "wallx", w - 1, 0, z, wall));
-  }
-  return out;
-}
-
-function booth(wall: TileColor, roof: TileColor, base: TileColor, roofs: number): Piece[] {
-  const out: Piece[] = [
-    tile("square", "floor", 0, 0, 0, base),
-    tile("square", "wallx", 0, 0, 0, wall, 1, "window"),
-    tile("square", "wallx", -1, 0, 0, wall),
-    tile("square", "wallz", 0, 0, 0, wall),
-    tile("square", "wallz", 0, 0, -1, wall, 1, "door"),
-  ];
-  if (roofs > 0) out.push(tile("triangle", "roofx", 0, 0, 0, roof, -1));
-  if (roofs > 1) out.push(tile("triangle", "roofx", 0, 0, -1, roof, 1));
-  if (roofs > 2) out.push(tile("triangle", "roofz", 0, 0, 0, roof, -1));
-  if (roofs > 3) out.push(tile("triangle", "roofz", -1, 0, 0, roof, 1));
-  return out;
-}
-
-function yard(wall: TileColor, base: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (let x = 0; x < 2; x++) {
-    for (let z = 0; z < 2; z++) out.push(tile("square", "floor", x, 0, z, base));
-  }
-  for (let x = 0; x < 2; x++) {
-    out.push(tile("square", "wallz", x, 0, -1, wall, 1, x === 0 ? "door" : "none"));
-    out.push(tile("square", "wallz", x, 0, 1, wall, 1, "window"));
-  }
-  for (let z = 0; z < 2; z++) {
-    out.push(tile("square", "wallx", -1, 0, z, wall));
-    out.push(tile("square", "wallx", 1, 0, z, wall));
-  }
-  return out;
-}
-
-function keep(stories: number, wall: TileColor, roof: TileColor, base: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (let x = 0; x < 2; x++) {
-    for (let z = 0; z < 2; z++) {
-      out.push(tile("square", "floor", x, 0, z, base));
-      out.push(tile("square", "floor", x, stories, z, roof));
+    for (let story = 0; story < cell.stories; story++) {
+      if (needs(cell, "s", story)) {
+        const next = neighbor(cell, "s");
+        if (!(next && needs(next, "n", story))) add(tile("square", "wallz", cell.x, story, cell.z - 1, wall, 1, cut(cell, "s", story)));
+      }
+      if (needs(cell, "n", story)) add(tile("square", "wallz", cell.x, story, cell.z, wall, 1, cut(cell, "n", story)));
+      if (needs(cell, "w", story)) {
+        const next = neighbor(cell, "w");
+        if (!(next && needs(next, "e", story))) add(tile("square", "wallx", cell.x - 1, story, cell.z, wall, 1, cut(cell, "w", story)));
+      }
+      if (needs(cell, "e", story)) add(tile("square", "wallx", cell.x, story, cell.z, wall, 1, cut(cell, "e", story)));
     }
   }
-  for (let s = 0; s < stories; s++) {
-    for (let x = 0; x < 2; x++) {
-      out.push(tile("square", "wallz", x, s, -1, wall, 1, s === 0 && x === 0 ? "door" : s === stories - 1 ? "window" : "none"));
-      out.push(tile("square", "wallz", x, s, 1, wall, 1, s === stories - 1 ? "window" : "none"));
-    }
-    for (let z = 0; z < 2; z++) {
-      out.push(tile("square", "wallx", -1, s, z, wall, 1, s > 0 ? "window" : "none"));
-      out.push(tile("square", "wallx", 1, s, z, wall));
-    }
-  }
-  return out;
-}
 
-function pyramid(base: TileColor, tip: TileColor): Piece[] {
-  return [
-    tile("square", "floor", 0, 0, 0, base),
-    tile("triangle", "roofx", 0, 0, 0, tip, -1),
-    tile("triangle", "roofx", 0, 0, -1, tip, 1),
-    tile("triangle", "roofz", 0, 0, 0, tip, -1),
-    tile("triangle", "roofz", -1, 0, 0, tip, 1),
-  ];
-}
-
-function fence(n: number, color: TileColor): Piece[] {
-  return Array.from({ length: n }, (_, x) => tile("square", "wallz", x, 0, 0, color));
-}
-
-function garage(wall: TileColor, roof: TileColor, base: TileColor): Piece[] {
-  return [
-    tile("square", "floor", 0, 0, 0, base),
-    tile("square", "wallx", -1, 0, 0, wall),
-    tile("square", "wallx", 0, 0, 0, wall),
-    tile("square", "wallz", 0, 0, -1, wall),
-    tile("square", "floor", 0, 1, 0, roof),
-  ];
-}
-
-function block(wall: TileColor, roof: TileColor, base: TileColor): Piece[] {
-  return [...booth(wall, roof, base, 0), tile("square", "floor", 0, 1, 0, roof)];
-}
-
-function boat(hull: TileColor, sail: TileColor, cabin: TileColor): Piece[] {
-  return [
-    tile("right", "floor", 0, 0, 0, hull),
-    tile("square", "floor", 1, 0, 0, hull),
-    tile("square", "floor", 2, 0, 0, hull),
-    tile("square", "wallz", 0, 0, 0, cabin),
-    tile("triangle", "wallx", 1, 0, 0, sail),
-    tile("triangle", "wallx", 2, 0, 0, sail),
-  ];
-}
-
-function steps(tread: TileColor, riser: TileColor): Piece[] {
-  return [
-    tile("square", "floor", 0, 0, 0, tread),
-    tile("square", "floor", 1, 1, 0, tread),
-    tile("square", "floor", 2, 2, 0, tread),
-    tile("square", "wallz", 1, 0, 0, riser),
-    tile("square", "wallz", 2, 0, 0, riser),
-    tile("square", "wallz", 2, 1, 0, riser),
-  ];
-}
-
-function bridge(deck: TileColor, post: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (let x = 0; x < 3; x++) out.push(tile("square", "floor", x, 1, 0, deck));
-  out.push(tile("square", "wallx", -1, 0, 0, post), tile("square", "wallx", 2, 0, 0, post));
-  out.push(tile("square", "floor", -1, 0, 0, post), tile("square", "floor", 2, 0, 0, post));
-  return out;
-}
-
-function rocket(body: TileColor, nose: TileColor, pad: TileColor): Piece[] {
-  return [
-    tile("square", "floor", 0, 0, 0, pad),
-    tile("square", "wallz", 0, 0, 0, body),
-    tile("square", "wallz", 0, 0, -1, body),
-    tile("square", "wallx", 0, 0, 0, body),
-    tile("square", "wallx", -1, 0, 0, body),
-    tile("triangle", "roofx", 0, 0, 0, nose, -1),
-    tile("triangle", "roofx", 0, 0, -1, nose, 1),
-  ];
-}
-
-function tree(trunk: TileColor, leaf: TileColor, ground: TileColor): Piece[] {
-  return [
-    tile("square", "floor", 0, 0, 0, ground),
-    tile("square", "floor", 1, 0, 0, ground),
-    tile("square", "wallz", 0, 0, 0, trunk),
-    tile("square", "wallz", 0, 1, 0, trunk),
-    tile("triangle", "wallz", -1, 1, 0, leaf),
-    tile("triangle", "wallz", 1, 1, 0, leaf),
-    tile("triangle", "wallz", 0, 2, 0, leaf),
-  ];
-}
-
-function castleWall(wall: TileColor, top: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (let x = 0; x < 4; x++) out.push(tile("square", "wallz", x, 0, 0, wall));
-  out.push(tile("square", "wallz", 0, 1, 0, wall), tile("square", "wallz", 3, 1, 0, wall));
-  out.push(tile("triangle", "roofx", 0, 1, 0, top, -1), tile("triangle", "roofx", 3, 1, 0, top, -1));
-  return out;
-}
-
-function airplane(body: TileColor, wing: TileColor, tail: TileColor): Piece[] {
-  return [
-    tile("square", "floor", 0, 0, 0, body),
-    tile("square", "floor", 1, 0, 0, body),
-    tile("square", "floor", 2, 0, 0, body),
-    tile("square", "floor", 1, 0, 1, wing),
-    tile("square", "floor", 1, 0, -1, wing),
-    tile("triangle", "floor", 3, 0, 0, tail),
-    tile("triangle", "wallz", 0, 0, 0, tail),
-    tile("triangle", "wallx", 2, 0, 0, tail),
-  ];
-}
-
-function train(body: TileColor, cabin: TileColor, stack: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (let x = 0; x < 6; x++) out.push(tile("square", "floor", x, 0, 0, body));
-  out.push(tile("square", "wallz", 0, 0, 0, cabin, 1, "window"));
-  out.push(tile("triangle", "wallx", -1, 0, 0, stack));
-  out.push(tile("triangle", "wallx", 5, 0, 0, cabin));
-  return out;
-}
-
-function parking(wall: TileColor, deck: TileColor, base: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (let y = 0; y < 3; y++) out.push(tile("square", "floor", 0, y, 0, y === 0 ? base : deck));
-  for (let y = 0; y < 2; y++) {
-    out.push(tile("square", "wallx", -1, y, 0, wall));
-    out.push(tile("square", "wallx", 0, y, 0, wall));
-    out.push(tile("square", "wallz", 0, y, -1, wall));
-  }
-  return out;
-}
-
-function fireStation(wall: TileColor, roof: TileColor, base: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (let x = 0; x < 2; x++) {
-    out.push(tile("square", "floor", x, 0, 0, base));
-    out.push(tile("square", "floor", x, 1, 0, roof));
-    out.push(tile("square", "wallz", x, 0, 0, wall, 1, x === 0 ? "door" : "window"));
-    out.push(tile("square", "wallz", x, 0, -1, wall, 1, "window"));
-  }
-  out.push(tile("square", "wallx", -1, 0, 0, wall), tile("square", "wallx", 1, 0, 0, wall));
-  return out;
-}
-
-function rocketShip(body: TileColor, nose: TileColor, fin: TileColor): Piece[] {
-  return [
-    tile("square", "floor", 0, 0, 0, nose),
-    tile("square", "wallz", 0, 0, 0, body),
-    tile("square", "wallz", 0, 0, -1, body),
-    tile("square", "wallx", -1, 0, 0, body),
-    tile("square", "wallx", 0, 0, 0, body),
-    tile("triangle", "roofx", 0, 0, 0, nose, -1),
-    tile("triangle", "roofx", 0, 0, -1, nose, 1),
-    tile("triangle", "wallz", -1, 0, 0, fin),
-    tile("triangle", "wallz", 1, 0, 0, fin),
-    tile("triangle", "wallx", 0, 0, 1, fin),
-  ];
-}
-
-function treehouse(trunk: TileColor, wall: TileColor, roof: TileColor, deck: TileColor): Piece[] {
-  const out: Piece[] = [tile("square", "wallz", 0, 0, 0, trunk), tile("square", "wallx", -1, 0, 0, trunk)];
-  for (let x = 0; x < 2; x++) {
-    for (let z = 0; z < 2; z++) out.push(tile("square", "floor", x, 1, z, deck));
-  }
-  out.push(tile("square", "wallz", 0, 1, -1, wall), tile("square", "wallz", 1, 1, -1, wall), tile("square", "wallx", -1, 1, 0, wall));
-  out.push(tile("triangle", "roofx", 0, 1, 0, roof, -1), tile("triangle", "roofx", 0, 1, -1, roof, 1));
-  return out;
-}
-
-function stepPyramid(base: TileColor, mid: TileColor, top: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (let x = 0; x < 3; x++) for (let z = 0; z < 3; z++) out.push(tile("square", "floor", x, 0, z, base));
-  for (let x = 0; x < 2; x++) for (let z = 0; z < 2; z++) out.push(tile("square", "floor", x, 1, z, mid));
-  out.push(tile("square", "floor", 0, 2, 0, top));
-  return out;
-}
-
-function longBridge(deck: TileColor, post: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (let x = 0; x < 5; x++) {
-    out.push(tile("square", "floor", x, 1, 0, deck));
-    out.push(tile("square", "wallz", x, 1, 0, post));
-  }
-  out.push(tile("square", "wallx", -1, 0, 0, post), tile("square", "wallx", 4, 0, 0, post));
-  out.push(tile("square", "floor", -1, 0, 0, deck), tile("square", "floor", 4, 0, 0, deck));
-  return out;
-}
-
-function spaceship(body: TileColor, nose: TileColor, wing: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (const y of [0, 1]) {
-    out.push(tile("square", "wallz", 0, y, 0, body), tile("square", "wallz", 0, y, -1, body));
-    out.push(tile("square", "wallx", -1, y, 0, body), tile("square", "wallx", 0, y, 0, body));
-  }
-  out.push(tile("square", "floor", 0, 0, 1, wing), tile("square", "floor", 0, 0, -2, wing));
-  out.push(tile("triangle", "roofx", 0, 1, 0, nose, -1), tile("triangle", "roofx", 0, 1, -1, nose, 1));
-  out.push(tile("triangle", "wallz", 1, 0, 0, nose));
-  return out;
-}
-
-function school(wall: TileColor, roof: TileColor, base: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (let x = 0; x < 2; x++) {
-    out.push(tile("square", "floor", x, 0, 0, base), tile("square", "floor", x, 2, 0, roof));
-    for (let s = 0; s < 2; s++) {
-      out.push(tile("square", "wallz", x, s, 0, wall, 1, "window"));
-      out.push(tile("square", "wallz", x, s, -1, wall, 1, s === 0 && x === 0 ? "door" : "window"));
-    }
-  }
-  for (let s = 0; s < 2; s++) {
-    out.push(tile("square", "wallx", -1, s, 0, wall, 1, "window"), tile("square", "wallx", 1, s, 0, wall, 1, "window"));
-  }
-  return out;
-}
-
-function church(wall: TileColor, roof: TileColor, base: TileColor, steeple: TileColor): Piece[] {
-  return [
-    ...house(2, 1, wall, roof, base),
-    tile("square", "floor", 3, 0, 0, base),
-    tile("square", "wallz", 3, 0, 0, steeple, 1, "window"),
-    tile("square", "wallz", 3, 0, -1, steeple),
-    tile("square", "wallx", 3, 0, 0, steeple),
-    tile("square", "wallx", 2, 0, 0, steeple),
-    tile("triangle", "roofx", 3, 0, 0, roof, -1),
-    tile("triangle", "roofx", 3, 0, -1, roof, 1),
-  ];
-}
-
-function gatehouse(wall: TileColor, roof: TileColor, base: TileColor): Piece[] {
-  const left = tower(1, wall, roof, base);
-  const right = left.map((piece) => ({ ...piece, x: piece.x + 2 }));
-  return [
-    ...left,
-    ...right,
-    tile("square", "floor", 1, 0, 0, base),
-    tile("square", "floor", 1, 1, 0, roof),
-  ];
-}
-
-function greatPyramid(base: TileColor, mid: TileColor, top: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (let x = 0; x < 4; x++) for (let z = 0; z < 4; z++) out.push(tile("square", "floor", x, 0, z, base));
-  for (let x = 1; x < 3; x++) for (let z = 1; z < 3; z++) out.push(tile("square", "floor", x, 1, z, mid));
-  out.push(tile("square", "floor", 1, 2, 1, top));
-  return out;
-}
-
-function airport(wall: TileColor, roof: TileColor, base: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (let x = 0; x < 6; x++) {
-    out.push(tile("square", "floor", x, 0, 0, base));
-    out.push(tile("square", "wallz", x, 0, -1, wall, 1, "window"));
-    out.push(tile("square", "floor", x, 1, 0, roof));
-  }
-  out.push(
-    tile("square", "floor", 6, 0, 0, base),
-    tile("square", "wallz", 6, 0, 0, wall, 1, "window"),
-    tile("square", "wallz", 6, 0, -1, wall),
-    tile("square", "wallx", 6, 0, 0, wall),
-    tile("square", "wallx", 5, 0, 0, wall),
-    tile("triangle", "roofx", 6, 0, 0, roof, -1),
-  );
-  return out;
-}
-
-function palace(wall: TileColor, roof: TileColor, base: TileColor): Piece[] {
-  const out: Piece[] = [];
-  for (let x = 0; x < 3; x++) {
-    for (let z = 0; z < 2; z++) {
-      out.push(tile("square", "floor", x, 0, z, base));
-      out.push(tile("square", "floor", x, 2, z, roof));
-    }
-  }
-  for (let s = 0; s < 2; s++) {
-    for (let x = 0; x < 3; x++) {
-      out.push(tile("square", "wallz", x, s, -1, wall, 1, s === 0 && x === 1 ? "door" : "window"));
-      out.push(tile("square", "wallz", x, s, 1, wall, 1, "window"));
-    }
-    for (let z = 0; z < 2; z++) {
-      out.push(tile("square", "wallx", -1, s, z, wall, 1, "window"));
-      out.push(tile("square", "wallx", 2, s, z, wall));
-    }
-  }
-  return out;
-}
-
-function collect(): { name: string; pieces: Piece[] }[] {
-  const found: { name: string; pieces: Piece[] }[] = [];
-  const push = (name: string, pieces: Piece[]) => found.push({ name, pieces });
-  for (let i = 0; i < 4; i++) {
-    const wall = COLORS[i % COLORS.length]!;
-    const roof = COLORS[(i + 2) % COLORS.length]!;
-    const base = COLORS[(i + 4) % COLORS.length]!;
-    const accent = COLORS[(i + 1) % COLORS.length]!;
-    push("Pyramid", pyramid(base, roof));
-    push("Little Tent", tent(1, wall, roof));
-    push("Fence", fence(5, wall));
-    push("Garage", garage(wall, roof, base));
-    push("Toy Block", block(wall, roof, base));
-    push("Sailboat", boat(base, roof, wall));
-    push("Steps", steps(base, wall));
-    push("Bridge", bridge(base, wall));
-    push("Rocket", rocket(wall, roof, accent));
-    push("Tree", tree(wall, roof, base));
-    push("Camp Tent", tent(2, wall, roof));
-    push("Castle Wall", castleWall(wall, roof));
-    push("Airplane", airplane(base, accent, wall));
-    push("Train", train(base, wall, accent));
-    push("Parking Garage", parking(wall, roof, base));
-    push("Lookout", tower(1, wall, roof, base));
-    push("Fire Station", fireStation(wall, roof, base));
-    push("Rocket Ship", rocketShip(wall, roof, accent));
-    push("Treehouse", treehouse(wall, accent, roof, base));
-    push("Party Tent", tent(3, wall, roof));
-    push("Sunny Cottage", house(2, 1, wall, roof, base));
-    push("Garden Yard", yard(wall, base));
-    push("Tall Lookout", tower(2, wall, roof, base));
-    push("Spaceship", spaceship(wall, roof, accent));
-    push("Long Tent", tent(4, wall, roof));
-    push("Step Pyramid", stepPyramid(base, accent, roof));
-    push("Long Bridge", longBridge(base, wall));
-    push("Little Fort", keep(1, wall, roof, base));
-    push("School", school(wall, roof, base));
-    push("Barn", house(3, 1, wall, roof, base));
-    push("Castle Gate", gatehouse(wall, roof, base));
-    push("Tall House", house(2, 2, wall, roof, base));
-    push("Church", church(wall, roof, base, accent));
-    push("Village Hall", hall(3, 2, wall, roof, base));
-    push("Great Pyramid", greatPyramid(base, accent, roof));
-    push("Stone Keep", keep(2, wall, roof, base));
-    push("Airport", airport(wall, roof, base));
-    push("Great Hall", hall(4, 2, wall, roof, base));
-    push("Palace", palace(wall, roof, base));
-    push("High Castle", keep(3, wall, roof, base));
-    push("Grand Hall", hall(5, 2, wall, roof, base));
-    push("Royal Keep", keep(4, wall, roof, base));
-  }
-  return found;
-}
-
-function takeClimbing(list: { name: string; pieces: Piece[] }[], count: number) {
-  const sorted = [...list].sort((a, b) => a.pieces.length - b.pieces.length);
-  const groups = new Map<number, { name: string; pieces: Piece[] }[]>();
-  for (const item of sorted) {
-    const pile = groups.get(item.pieces.length) ?? [];
-    pile.push(item);
-    groups.set(item.pieces.length, pile);
-  }
-  const sizes = [...groups.keys()].sort((a, b) => a - b);
-  const base = Math.floor(count / Math.max(1, sizes.length));
-  let extra = count - base * sizes.length;
-  const want = new Map<number, number>();
-  for (let i = sizes.length - 1; i >= 0; i--) {
-    const add = extra > 0 ? 1 : 0;
-    if (add) extra -= 1;
-    want.set(sizes[i]!, base + add);
-  }
-  const out: { name: string; pieces: Piece[] }[] = [];
-  const used = new Set<(typeof sorted)[number]>();
-  for (const size of sizes) {
-    const pile = groups.get(size)!;
-    for (const item of pile.slice(0, Math.min(want.get(size)!, pile.length))) {
-      out.push(item);
-      used.add(item);
-    }
-  }
-  if (out.length < count) {
-    for (let i = sizes.length - 1; i >= 0 && out.length < count; i--) {
-      for (const item of groups.get(sizes[i]!)!) {
-        if (out.length >= count) break;
-        if (used.has(item)) continue;
-        out.push(item);
-        used.add(item);
+  if (spec.wheels && spec.wheels !== "none") {
+    const xs = spec.cells.map((cell) => cell.x);
+    const zs = spec.cells.map((cell) => cell.z);
+    const longX = Math.max(...xs) - Math.min(...xs) >= Math.max(...zs) - Math.min(...zs);
+    const min = longX ? Math.min(...xs) : Math.min(...zs);
+    const max = longX ? Math.max(...xs) : Math.max(...zs);
+    for (const cell of spec.cells) {
+      const atEnd = longX ? cell.x === min || cell.x === max : cell.z === min || cell.z === max;
+      if (spec.wheels === "ends" && !atEnd) continue;
+      if (longX) {
+        add(tile("wheel", "wallz", cell.x, 0, cell.z - 1, hub, -1));
+        add(tile("wheel", "wallz", cell.x, 0, cell.z, hub, 1));
+      } else {
+        add(tile("wheel", "wallx", cell.x - 1, 0, cell.z, hub, -1));
+        add(tile("wheel", "wallx", cell.x, 0, cell.z, hub, 1));
       }
     }
   }
-  return out.sort((a, b) => a.pieces.length - b.pieces.length).slice(0, count);
+  return pieces;
+}
+
+function shift(cells: Cell[], dx: number, dz: number): Cell[] {
+  return cells.map((cell) => ({ ...cell, x: cell.x + dx, z: cell.z + dz }));
+}
+
+const door = (x: number, z = 0, story = 0, side: Side = "s"): Opening => ({ x, z, side, story, cut: "door" });
+const window = (x: number, z = 0, story = 0, side: Side = "s"): Opening => ({ x, z, side, story, cut: "window" });
+const arch = (x: number, z = 0, story = 0, side: Side = "s"): Opening => ({ x, z, side, story, cut: "arch" });
+
+function catalog(): Spec[] {
+  const specs: Spec[] = [];
+  const put = (name: string, cells: Cell[], openings: Opening[] = [], wheels: Wheels = "none") => specs.push({ name, cells, openings, wheels });
+
+  put("Pyramid", [{ x: 0, z: 0, stories: 1, roof: "point", bare: true }]);
+  put("Cube", rect(0, 0, 1, 1, 1, "flat"));
+  put("Present", rect(0, 0, 1, 1, 1, "flat"));
+  put("Safe", rect(0, 0, 1, 1, 1, "flat"), [door(0)]);
+  put("Lantern", rect(0, 0, 1, 1, 1, "flat"), [window(0, 0, 0, "s"), window(0, 0, 0, "n"), window(0, 0, 0, "e"), window(0, 0, 0, "w")]);
+  put("Little House", [{ x: 0, z: 0, stories: 1, roof: "point" }], [door(0)]);
+  put("Window House", [{ x: 0, z: 0, stories: 1, roof: "point" }], [door(0), window(0, 0, 0, "e"), window(0, 0, 0, "w")]);
+  put("Shed", rect(0, 0, 2, 1, 1, "flat"), [door(0)]);
+  put("Cabin", rect(0, 0, 2, 1, 1, "flat"), [door(0), window(1)]);
+  put("Garage", rect(0, 0, 3, 1, 1, "flat"), [door(1)]);
+  put("Bungalow", rect(0, 0, 3, 1, 1, "flat"), [window(0), door(1), window(2)]);
+  put("Square House", rect(0, 0, 2, 2, 1, "flat"), [door(0, 0), window(1, 0)]);
+  put("Short Tower", rect(0, 0, 1, 1, 2, "flat"), [door(0), window(0, 0, 1)]);
+  put("Watchtower", rect(0, 0, 1, 1, 3, "flat"), [door(0), window(0, 0, 2)]);
+  put("Pointed Tower", [{ x: 0, z: 0, stories: 2, roof: "point" }], [door(0), window(0, 0, 1)]);
+  put("Rocket", [{ x: 0, z: 0, stories: 3, roof: "point" }], [window(0, 0, 1)]);
+  put("Split Cottage", [{ x: 0, z: 0, stories: 1, roof: "flat" }, { x: 1, z: 0, stories: 2, roof: "flat" }], [door(0), window(1, 0, 1)]);
+  put("Twin Peaks", [{ x: 0, z: 0, stories: 1, roof: "point" }, { x: 1, z: 0, stories: 1, roof: "point" }], [door(0)]);
+  put("L-House", [{ x: 0, z: 0, stories: 1, roof: "flat" }, { x: 1, z: 0, stories: 1, roof: "flat" }, { x: 0, z: 1, stories: 1, roof: "flat" }], [door(1)]);
+  put("Shop", rect(0, 0, 2, 2, 1, "flat"), [door(0, 0), window(1, 0), window(1, 0, 0, "e")]);
+
+  put("Barn", rect(0, 0, 4, 2, 1, "flat"), [door(1, 0), door(2, 0), window(0, 0), window(3, 0)]);
+  put("School", rect(0, 0, 4, 1, 1, "flat"), [window(0), door(1), window(2), window(3)]);
+  put("Fire Station", raise(rect(0, 0, 3, 2, 1, "flat"), 2, 1, 2, "point"), [door(1, 0), window(2, 1, 1)]);
+  put("Church", raise(rect(0, 0, 3, 1, 1, "flat"), 2, 0, 3, "point"), [door(1), window(2, 0, 1), window(2, 0, 2)]);
+  put("Lighthouse", raise(rect(0, 0, 2, 2, 1, "flat"), 0, 0, 4, "point"), [door(1, 0), window(0, 0, 2), window(0, 0, 3)]);
+  put("Gallery", raise(raise(rect(0, 0, 4, 1, 1, "flat"), 0, 0, 2, "flat"), 3, 0, 2, "flat"), [door(1), window(0, 0, 1), window(3, 0, 1)]);
+  put("Car", rect(0, 0, 2, 1, 1, "flat"), [window(0), window(1)], "all");
+  put("Bus", rect(0, 0, 4, 1, 1, "flat"), [door(0), window(1), window(2), window(3)], "ends");
+  put("Truck", [{ x: 0, z: 0, stories: 2, roof: "flat" }, { x: 1, z: 0, stories: 1, roof: "flat" }, { x: 2, z: 0, stories: 1, roof: "flat" }], [window(0, 0, 1), door(0)], "ends");
+  put("Train Car", rect(0, 0, 3, 1, 1, "flat"), [window(0), window(1), window(2)], "ends");
+  put("Engine", [{ x: 0, z: 0, stories: 2, roof: "point" }, { x: 1, z: 0, stories: 1, roof: "flat" }, { x: 2, z: 0, stories: 1, roof: "flat" }], [window(0, 0, 1), door(1)], "ends");
+  put("Airplane", [
+    ...rect(0, 0, 3, 1, 1, "flat"),
+    { x: 1, z: 1, stories: 1, roof: "flat" },
+    { x: 1, z: -1, stories: 1, roof: "flat" },
+    { x: 3, z: 0, stories: 2, roof: "flat" },
+  ], [window(0), window(3, 0, 1)]);
+  put("Silo", [{ x: 0, z: 0, stories: 4, roof: "point" }], [door(0), window(0, 0, 3)]);
+  put("Farmhouse", rect(0, 0, 3, 2, 2, "flat"), [door(1, 0), window(0, 0), window(2, 0), window(0, 0, 1), window(1, 0, 1), window(2, 0, 1)]);
+  put("Covered Bridge", [
+    { x: 0, z: 0, stories: 2, roof: "flat" },
+    { x: 1, z: 0, stories: 1, roof: "flat" },
+    { x: 2, z: 0, stories: 1, roof: "flat" },
+    { x: 3, z: 0, stories: 1, roof: "flat" },
+    { x: 4, z: 0, stories: 2, roof: "flat" },
+  ], [arch(2), window(0, 0, 1), window(4, 0, 1)]);
+  put("Gatehouse", [
+    { x: 0, z: 0, stories: 2, roof: "point" },
+    { x: 1, z: 0, stories: 1, roof: "flat" },
+    { x: 2, z: 0, stories: 2, roof: "point" },
+  ], [arch(1), window(0, 0, 1), window(2, 0, 1)]);
+  put("Market", rect(0, 0, 3, 1, 1, "flat"), [door(0), door(1), door(2)]);
+  put("Motel", rect(0, 0, 4, 1, 2, "flat"), [door(0), door(1), door(2), door(3), window(0, 0, 1), window(1, 0, 1), window(2, 0, 1), window(3, 0, 1)]);
+  put("Library", rect(0, 0, 3, 2, 1, "flat"), [door(1, 0), window(0, 0), window(2, 0), window(0, 1), window(2, 1)]);
+  put("Hangar", rect(0, 0, 4, 2, 1, "flat"), [door(0, 0, 0, "w"), door(0, 1, 0, "w"), window(3, 0, 0, "e")]);
+  put("Control Tower", raise(rect(0, 0, 2, 2, 1, "flat"), 1, 1, 3, "flat"), [door(0, 0), window(1, 1, 1), window(1, 1, 2)]);
+  put("Greenhouse", rect(0, 0, 2, 2, 1, "flat"), [door(0, 0), window(1, 0), window(0, 0, 0, "w"), window(1, 1, 0, "n"), window(1, 0, 0, "e")]);
+  put("Keep", rect(0, 0, 3, 3, 1, "flat"), [door(1, 0), window(0, 0), window(2, 0), window(0, 2, 0, "n"), window(2, 2, 0, "n")]);
+  put("Corner Tower", raise(
+    [{ x: 0, z: 0, stories: 1, roof: "flat" }, { x: 1, z: 0, stories: 1, roof: "flat" }, { x: 0, z: 1, stories: 1, roof: "flat" }],
+    0, 1, 3, "point",
+  ), [door(1), window(0, 1, 2)]);
+  put("Lodge", rect(0, 0, 2, 2, 2, "flat"), [door(0, 0), window(1, 0), window(0, 0, 1), window(1, 0, 1), window(1, 1, 1, "n")]);
+  put("Depot", raise(rect(0, 0, 4, 1, 1, "flat"), 3, 0, 2, "point"), [door(1), window(3, 0, 1)]);
+  put("Camper", rect(0, 0, 3, 1, 1, "flat"), [door(0), window(1), window(2)], "ends");
+  put("Warehouse", rect(0, 0, 4, 3, 1, "flat"), [door(1, 0), door(2, 0)]);
+  put("Fire Lookout", raise(rect(0, 0, 2, 2, 1, "flat"), 0, 1, 4, "point"), [door(1, 0), window(0, 1, 2), window(0, 1, 3)]);
+  put("Station", raise(rect(0, 0, 3, 1, 1, "flat"), 2, 0, 2, "flat"), [door(1), window(2, 0, 1)]);
+
+  put("Two-Story House", rect(0, 0, 2, 2, 2, "flat"), [door(0, 0), window(1, 0), window(0, 0, 1), window(1, 0, 1), window(0, 1, 1, "n"), window(1, 1, 1, "n")]);
+  put("Schoolhouse", rect(0, 0, 4, 1, 2, "flat"), [door(1), window(0), window(2), window(3), window(0, 0, 1), window(1, 0, 1), window(2, 0, 1), window(3, 0, 1)]);
+  put("Firehouse", raise(rect(0, 0, 4, 2, 1, "flat"), 3, 1, 3, "point"), [door(1, 0), door(2, 0), window(3, 1, 2)]);
+  put("Church Hall", raise(rect(0, 0, 4, 2, 1, "flat"), 3, 1, 3, "point"), [door(1, 0), window(3, 1, 1), window(3, 1, 2)]);
+  put("Lighthouse Cottage", [
+    { x: 0, z: 0, stories: 4, roof: "point" },
+    { x: 1, z: 0, stories: 1, roof: "flat" },
+    { x: 2, z: 0, stories: 1, roof: "flat" },
+  ], [door(1), window(0, 0, 2), window(0, 0, 3), window(2)]);
+  put("Castle Gate", [
+    { x: 0, z: 0, stories: 3, roof: "point" },
+    { x: 1, z: 0, stories: 1, roof: "flat" },
+    { x: 2, z: 0, stories: 3, roof: "point" },
+  ], [arch(1), window(0, 0, 2), window(2, 0, 2)]);
+  put("Square Keep", rect(0, 0, 2, 2, 3, "flat"), [door(0, 0), window(1, 0), window(0, 0, 1), window(1, 0, 1), window(0, 0, 2), window(1, 0, 2)]);
+  put("Step Pyramid", [
+    ...rect(0, 0, 3, 3, 1, "flat").filter((cell) => !(cell.x === 1 && cell.z === 1)),
+    { x: 1, z: 1, stories: 2, roof: "point" },
+  ]);
+  put("Launch Rocket", raise(rect(0, 0, 3, 3, 1, "flat"), 1, 1, 4, "point"), [door(1, 0), window(1, 1, 2), window(1, 1, 3)]);
+  put("Spaceship", [
+    { x: 0, z: 0, stories: 2, roof: "point" },
+    { x: 1, z: 0, stories: 2, roof: "flat" },
+    { x: 2, z: 0, stories: 2, roof: "flat" },
+    { x: 1, z: 1, stories: 1, roof: "flat" },
+    { x: 1, z: -1, stories: 1, roof: "flat" },
+  ], [window(2, 0, 1)]);
+  put("Airliner", [
+    ...rect(0, 0, 4, 1, 1, "flat"),
+    { x: 1, z: 1, stories: 1, roof: "flat" },
+    { x: 2, z: 1, stories: 1, roof: "flat" },
+    { x: 1, z: -1, stories: 1, roof: "flat" },
+    { x: 2, z: -1, stories: 1, roof: "flat" },
+    { x: 4, z: 0, stories: 2, roof: "flat" },
+  ], [window(0), window(4, 0, 1)]);
+  put("Two-Car Train", [
+    { x: 0, z: 0, stories: 2, roof: "point" },
+    { x: 1, z: 0, stories: 1, roof: "flat" },
+    { x: 3, z: 0, stories: 1, roof: "flat" },
+    { x: 4, z: 0, stories: 1, roof: "flat" },
+  ], [window(0, 0, 1), window(1), window(3), window(4)], "all");
+  put("Tower Bridge", [
+    { x: 0, z: 0, stories: 3, roof: "point" },
+    { x: 1, z: 0, stories: 1, roof: "flat" },
+    { x: 2, z: 0, stories: 1, roof: "flat" },
+    { x: 3, z: 0, stories: 1, roof: "flat" },
+    { x: 4, z: 0, stories: 3, roof: "point" },
+  ], [window(0, 0, 2), window(4, 0, 2), arch(2)]);
+  put("Barn Loft", rect(0, 0, 4, 2, 2, "flat"), [door(1, 0), door(2, 0), window(0, 0, 1), window(3, 0, 1), window(1, 1, 1, "n")]);
+  put("Farm", [
+    ...rect(0, 0, 3, 2, 1, "flat"),
+    { x: 3, z: 0, stories: 3, roof: "point" },
+  ], [door(1, 0), window(3, 0, 2)]);
+  put("Chimney House", raise(rect(0, 0, 2, 2, 1, "flat"), 1, 1, 2, "flat"), [door(0, 0), window(1, 0), window(1, 1, 1)]);
+  put("Hotel", rect(0, 0, 4, 2, 2, "flat"), [door(1, 0), window(0, 0), window(2, 0), window(3, 0), window(0, 0, 1), window(1, 0, 1), window(2, 0, 1), window(3, 0, 1)]);
+  put("Three Towers", raise(raise(raise(rect(0, 0, 5, 1, 1, "flat"), 0, 0, 3, "point"), 2, 0, 3, "point"), 4, 0, 3, "point"), [door(1), window(0, 0, 2), window(2, 0, 2), window(4, 0, 2)]);
+  put("Airport", raise(rect(0, 0, 5, 1, 1, "flat"), 4, 0, 3, "flat"), [door(1), window(0), window(2), window(4, 0, 1), window(4, 0, 2)]);
+  put("Garage House", [
+    { x: 0, z: 0, stories: 1, roof: "flat" },
+    { x: 1, z: 0, stories: 1, roof: "flat" },
+    { x: 2, z: 0, stories: 2, roof: "flat" },
+    { x: 3, z: 0, stories: 2, roof: "flat" },
+  ], [door(0), door(1), window(2, 0, 1), window(3, 0, 1)]);
+  put("Mill", raise(rect(0, 0, 2, 2, 2, "flat"), 0, 1, 3, "point"), [door(1, 0), window(0, 1, 2)]);
+  put("Double Garage", rect(0, 0, 2, 2, 1, "flat"), [door(0, 0), door(1, 0)]);
+  put("Storehouse", rect(0, 0, 3, 2, 1, "flat"), [door(1, 0), window(0, 0), window(2, 0)]);
+  put("Tunnel", rect(0, 0, 4, 1, 1, "flat"), [arch(0, 0, 0, "w"), arch(3, 0, 0, "e")]);
+  put("Library Hall", rect(0, 0, 4, 2, 2, "flat"), [door(1, 0), window(0, 0), window(2, 0), window(3, 0), window(0, 0, 1), window(1, 0, 1), window(2, 0, 1), window(3, 0, 1)]);
+  put("Market Hall", rect(0, 0, 4, 2, 1, "flat"), [door(0, 0), door(1, 0), door(2, 0), door(3, 0)]);
+  put("Temple", [
+    ...rect(0, 0, 4, 4, 1, "flat").filter((cell) => cell.x < 1 || cell.x > 2 || cell.z < 1 || cell.z > 2),
+    { x: 1, z: 1, stories: 2, roof: "flat" },
+    { x: 2, z: 1, stories: 2, roof: "flat" },
+    { x: 1, z: 2, stories: 2, roof: "flat" },
+    { x: 2, z: 2, stories: 3, roof: "point" },
+  ], [door(1, 0)]);
+  put("Fort Keep", rect(0, 0, 3, 3, 2, "flat"), [door(1, 0), window(0, 0, 1), window(2, 0, 1), window(1, 2, 1, "n")]);
+  put("Clock Tower", raise(rect(0, 0, 2, 2, 1, "flat"), 0, 1, 5, "point"), [door(1, 0), window(0, 1, 2), window(0, 1, 3), window(0, 1, 4)]);
+  put("Cafe", rect(0, 0, 2, 2, 1, "flat"), [door(0, 0), window(1, 0), window(0, 1, 0, "n"), window(1, 1, 0, "n"), window(1, 0, 0, "e")]);
+
+  put("Four-Tower Castle", (() => {
+    let cells = rect(0, 0, 3, 3, 2, "flat");
+    for (const [x, z] of [[0, 0], [2, 0], [0, 2], [2, 2]] as const) cells = raise(cells, x, z, 3, "point");
+    return cells;
+  })(), [arch(1, 0), window(0, 0, 2), window(2, 0, 2), window(0, 2, 2, "n"), window(2, 2, 2, "n")]);
+  put("Little Village", [
+    ...rect(0, 0, 2, 1, 1, "flat"),
+    ...shift([{ x: 0, z: 0, stories: 1, roof: "point" }], 4, 0),
+    ...shift(rect(0, 0, 1, 1, 3, "flat"), 6, 0),
+  ], [door(0), door(4), window(6, 0, 2)]);
+  put("Palace", raise(rect(0, 0, 5, 2, 2, "flat"), 2, 1, 3, "flat"), [door(2, 0), window(0, 0), window(1, 0), window(3, 0), window(4, 0), window(2, 1, 2)]);
+  put("Cathedral", raise(raise(rect(0, 0, 5, 2, 2, "flat"), 0, 1, 4, "point"), 4, 1, 4, "point"), [door(2, 0), arch(2, 0, 1), window(0, 1, 3), window(4, 1, 3)]);
+  put("Spaceport", [
+    ...rect(0, 0, 3, 2, 1, "flat"),
+    ...shift([{ x: 0, z: 0, stories: 4, roof: "point" }], 4, 0),
+    ...shift(rect(0, 0, 2, 1, 1, "flat"), 4, 2),
+  ], [door(1, 0), window(4, 0, 2), window(4, 0, 3), door(4, 2)]);
+  put("Train Station", [
+    ...rect(0, 0, 4, 1, 1, "flat"),
+    ...shift([{ x: 0, z: 0, stories: 2, roof: "point" }, { x: 1, z: 0, stories: 1, roof: "flat" }, { x: 2, z: 0, stories: 1, roof: "flat" }], 0, -2),
+  ], [door(1), window(0, -2, 1), window(1, -2), window(2, -2)]);
+  // wheels added below for the train only — handled by a custom wheels flag on a joined spec
+  put("Airport and Plane", [
+    ...rect(0, 0, 4, 1, 1, "flat"),
+    ...shift([
+      ...rect(0, 0, 3, 1, 1, "flat"),
+      { x: 1, z: 1, stories: 1, roof: "flat" },
+      { x: 1, z: -1, stories: 1, roof: "flat" },
+    ], 0, -3),
+  ], [door(1), window(0, -3)]);
+  put("Hill Castle", raise(rect(0, 0, 3, 3, 1, "flat"), 1, 1, 3, "point"), [door(1, 0), window(1, 1, 2)]);
+  put("Lighthouse Point", [
+    { x: 0, z: 0, stories: 4, roof: "point" },
+    ...shift(rect(0, 0, 2, 1, 1, "flat"), 2, 0),
+    ...shift(rect(0, 0, 1, 1, 1, "flat"), 2, -2),
+  ], [door(2), window(0, 0, 3), door(2, -2)]);
+  put("School Block", [
+    ...rect(0, 0, 4, 1, 2, "flat"),
+    ...shift(rect(0, 0, 2, 2, 1, "flat"), 4, 0),
+  ], [door(1), window(0, 0, 1), window(2, 0, 1), door(4)]);
+  put("High Keep", rect(0, 0, 2, 2, 4, "flat"), [door(0, 0), window(1, 0, 1), window(0, 0, 2), window(1, 0, 3)]);
+  put("Grand Pyramid", [
+    ...rect(0, 0, 4, 4, 1, "flat").filter((cell) => cell.x === 0 || cell.z === 0 || cell.x === 3 || cell.z === 3),
+    { x: 1, z: 1, stories: 2, roof: "flat" },
+    { x: 2, z: 1, stories: 2, roof: "flat" },
+    { x: 1, z: 2, stories: 2, roof: "flat" },
+    { x: 2, z: 2, stories: 3, roof: "point" },
+  ]);
+  put("Bridge Castle", [
+    { x: 0, z: 0, stories: 2, roof: "point" },
+    { x: 0, z: 1, stories: 2, roof: "point" },
+    { x: 1, z: 0, stories: 1, roof: "flat" },
+    { x: 2, z: 0, stories: 1, roof: "flat" },
+    { x: 3, z: 0, stories: 1, roof: "flat" },
+    { x: 4, z: 0, stories: 2, roof: "point" },
+    { x: 4, z: 1, stories: 2, roof: "point" },
+  ], [arch(2), window(0, 1, 1, "n"), window(4, 1, 1, "n")]);
+  put("Warehouse Row", rect(0, 0, 6, 2, 1, "flat"), [door(0, 0), door(2, 0), door(4, 0)]);
+  put("Fire Yard", [
+    ...raise(rect(0, 0, 3, 2, 1, "flat"), 2, 1, 3, "point"),
+    ...shift(rect(0, 0, 2, 1, 1, "flat"), 0, -2),
+  ], [door(1, 0), window(2, 1, 2), window(0, -2), door(1, -2)]);
+  put("Manor", rect(0, 0, 4, 2, 2, "flat"), [door(1, 0), window(0, 0), window(2, 0), window(3, 0), window(0, 0, 1), window(1, 0, 1), window(2, 0, 1), window(3, 0, 1), window(0, 1, 1, "n")]);
+  put("Citadel", rect(0, 0, 4, 4, 2, "flat"), [door(1, 0), window(0, 0, 1), window(3, 0, 1), window(0, 3, 1, "n"), window(3, 3, 1, "n")]);
+  put("Shipyard", rect(0, 0, 5, 2, 1, "flat"), [door(1, 0), door(3, 0), window(0, 1, 0, "n"), window(4, 1, 0, "n")]);
+  put("Rocket Base", [
+    ...rect(0, 0, 3, 2, 1, "flat"),
+    { x: 3, z: 0, stories: 3, roof: "flat" },
+    ...shift([{ x: 0, z: 0, stories: 4, roof: "point" }], 5, 0),
+  ], [door(1, 0), window(3, 0, 2), window(5, 0, 2), window(5, 0, 3)]);
+  put("King's Castle", (() => {
+    let cells = rect(0, 0, 3, 2, 2, "flat");
+    for (const [x, z] of [[0, 0], [2, 0], [0, 1], [2, 1]] as const) cells = raise(cells, x, z, 3, "point");
+    return cells;
+  })(), [arch(1, 0), window(0, 0, 2), window(2, 0, 2), window(0, 1, 2, "n"), window(2, 1, 2, "n")]);
+
+  return specs;
+}
+
+function withTrainWheels(pieces: Piece[], spec: Spec, index: number): Piece[] {
+  if (spec.name !== "Train Station" && spec.name !== "Fire Yard") return pieces;
+  const hub = COLORS[(index + 1) % COLORS.length]!;
+  const extra: Piece[] = [];
+  if (spec.name === "Train Station") {
+    for (const x of [0, 2]) {
+      extra.push(tile("wheel", "wallz", x, 0, -3, hub, -1), tile("wheel", "wallz", x, 0, -2, hub, 1));
+    }
+  }
+  if (spec.name === "Fire Yard") {
+    extra.push(tile("wheel", "wallz", 0, 0, -3, hub, -1), tile("wheel", "wallz", 0, 0, -2, hub, 1));
+    extra.push(tile("wheel", "wallz", 1, 0, -3, hub, -1), tile("wheel", "wallz", 1, 0, -2, hub, 1));
+  }
+  return [...pieces, ...extra];
 }
 
 function assemble(): Puzzle[] {
-  const used = new Set<string>();
-  const pool = collect().filter((item) => {
-    const sig = item.pieces
-      .map((p) => `${p.shape}${p.plane}${p.x}${p.y}${p.z}${p.lean}${p.cutout}${p.color}`)
-      .join(",");
-    if (used.has(sig)) return false;
-    used.add(sig);
-    return true;
+  const specs = catalog();
+  if (specs.length !== 100) throw new Error(`Expected 100 puzzle specs, got ${specs.length}`);
+  return specs.map((spec, index) => {
+    const id = index + 1;
+    const difficulty: Difficulty = id <= 20 ? "easy" : id <= 50 ? "moderate" : id <= 80 ? "advanced" : "expert";
+    return { id, name: spec.name, difficulty, pieces: withTrainWheels(shell(spec, index), spec, index) };
   });
-  const bands: { min: number; max: number; count: number; difficulty: Difficulty }[] = [
-    { min: 5, max: 7, count: 20, difficulty: "easy" },
-    { min: 8, max: 12, count: 30, difficulty: "moderate" },
-    { min: 13, max: 20, count: 30, difficulty: "advanced" },
-    { min: 21, max: 80, count: 20, difficulty: "expert" },
-  ];
-  const groups = bands.map((band) => ({
-    difficulty: band.difficulty,
-    list: takeClimbing(
-      pool.filter((item) => item.pieces.length >= band.min && item.pieces.length <= band.max),
-      band.count,
-    ),
-  }));
-  if (groups.some((g, i) => g.list.length !== [20, 30, 30, 20][i])) {
-    throw new Error(`SnapTile puzzle buckets were ${groups.map((g) => g.list.length).join(",")}, expected 20,30,30,20`);
-  }
-  let id = 1;
-  const puzzles: Puzzle[] = [];
-  const seen = new Map<string, number>();
-  for (const group of groups) {
-    for (const item of group.list) {
-      const n = (seen.get(item.name) ?? 0) + 1;
-      seen.set(item.name, n);
-      puzzles.push({
-        id,
-        name: n === 1 ? item.name : `${item.name} ${n}`,
-        difficulty: group.difficulty,
-        pieces: item.pieces,
-      });
-      id += 1;
-    }
-  }
-  return puzzles;
 }
 
 export const PUZZLES: Puzzle[] = assemble();
 
-/** Share of the build drawn as spots. Puzzle 1–20 show everything. Later puzzles fade to 10%, so the last ones hide about 90% of the spots. */
 export function guidanceRatio(puzzleId: number): number {
   if (puzzleId <= 20) return 1;
   const t = Math.min(1, Math.max(0, (puzzleId - 21) / 79));

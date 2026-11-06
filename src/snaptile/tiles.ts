@@ -1,7 +1,7 @@
 import { TEST_UNLOCK } from "./test-mode";
 
-export type Shape = "square" | "triangle" | "right";
-export type Cutout = "none" | "window" | "door";
+export type Shape = "square" | "triangle" | "right" | "wheel";
+export type Cutout = "none" | "window" | "door" | "arch";
 export type TileColor = "coral" | "gold" | "mint" | "sky" | "lilac" | "blush";
 export type Tier = "free" | "builder" | "master" | "yearly";
 export type Difficulty = "easy" | "moderate" | "advanced" | "expert";
@@ -101,7 +101,8 @@ export function samePiece(a: Piece, b: Piece): boolean {
 }
 
 export function occupancyKey(p: Piece): string {
-  return `${p.plane}|${p.x}|${p.y}|${p.z}|${p.lean}`;
+  const face = `${p.plane}|${p.x}|${p.y}|${p.z}|${p.lean}`;
+  return p.shape === "wheel" ? `${face}|wheel` : face;
 }
 
 export function pieceKey(p: Piece): string {

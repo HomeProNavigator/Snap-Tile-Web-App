@@ -556,6 +556,10 @@
   clip-path: polygon(0 0, 0 100%, 100% 100%);
 }
 
+.snap-mini.is-wheel {
+  border-radius: 50%;
+}
+
 .snap-colors {
   display: flex;
   gap: 8px;
