@@ -6,11 +6,12 @@ export type TileColor = "coral" | "gold" | "mint" | "sky" | "lilac" | "blush";
 export type Tier = "free" | "builder" | "master" | "yearly";
 export type Difficulty = "easy" | "moderate" | "advanced" | "expert";
 export type Plane = "floor" | "wallx" | "wallz" | "roofx" | "roofz";
+export type Turn = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export type Piece = {
   shape: Shape;
   cutout: Cutout;
-  rot: 0 | 1 | 2 | 3;
+  rot: Turn;
   x: number;
   y: number;
   z: number;

@@ -205,6 +205,36 @@ function TileView({
 }) {
   const mesh = <TileMesh piece={piece} ghost={ghost} bright={bright} guide={guide} hidden={hidden} selected={selected} onPick={onPick} />;
   const at = (x: number, y: number, z: number): [number, number, number] => [x - ox, y - oy, z - oz];
+  if (piece.shape === "right" && piece.plane !== "roofx" && piece.plane !== "roofz") {
+    const step = piece.rot % 8;
+    const spin = Math.floor(step / 2) % 4;
+    const pitched = step % 2 === 1;
+    const s = TILE / 2;
+    if (piece.plane === "floor") {
+      return (
+        <group position={at(piece.x, piece.y, piece.z)} rotation={[0, spin * (Math.PI / 2), 0]}>
+          <group position={[0, 0, s]} rotation={[pitched ? Math.PI / 4 : 0, 0, 0]}>
+            <group position={[0, 0, -s]} rotation={[-Math.PI / 2, 0, 0]}>
+              {mesh}
+            </group>
+          </group>
+        </group>
+      );
+    }
+    const base = piece.plane === "wallz" ? at(piece.x, piece.y + 0.5, piece.z + 0.5) : at(piece.x + 0.5, piece.y + 0.5, piece.z);
+    const yaw = piece.plane === "wallx" ? Math.PI / 2 : 0;
+    return (
+      <group position={base} rotation={[0, yaw, 0]}>
+        <group rotation={[0, 0, -spin * (Math.PI / 2)]}>
+          <group position={[0, -s, 0]}>
+            <group rotation={[pitched ? Math.PI / 4 : 0, 0, 0]}>
+              <group position={[0, s, 0]}>{mesh}</group>
+            </group>
+          </group>
+        </group>
+      </group>
+    );
+  }
   if (piece.plane === "floor") {
     return (
       <group position={at(piece.x, piece.y, piece.z)} rotation={[0, piece.rot * (Math.PI / 2), 0]}>

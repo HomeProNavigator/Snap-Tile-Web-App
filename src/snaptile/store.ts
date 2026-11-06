@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { buildBadges, earnedPuzzleBadges } from "./badges";
 import { playTone, setMuted } from "./audio";
 import { PUZZLES } from "./puzzles";
-import { normalizePiece, occupancyKey, pieceKey, pieceLimit, puzzleCap, sameKind, samePiece, type Cutout, type Piece, type Shape, type Tier, type TileColor, type TileKind } from "./tiles";
+import { normalizePiece, occupancyKey, pieceKey, pieceLimit, puzzleCap, sameKind, samePiece, type Cutout, type Piece, type Shape, type Tier, type TileColor, type TileKind, type Turn } from "./tiles";
 import type { Facing } from "./space";
 import { isNativeApp, purchaseNative, restoreNative } from "./native";
 import { TEST_UNLOCK } from "./test-mode";
@@ -42,7 +42,7 @@ type State = Persisted & {
   trayShape: Shape;
   trayColor: TileColor;
   trayCutout: Cutout;
-  trayRot: 0 | 1 | 2 | 3;
+  trayRot: Turn;
   trayFacing: Facing;
   held: TileKind | null;
   selected: number | null;
@@ -263,7 +263,11 @@ export const useSnap = create<State>((set, get) => ({
 
   setHeld: (held) => set({ held, notice: null }),
 
-  rotateTray: () => set({ trayRot: (((get().trayRot + 1) % 4) as 0 | 1 | 2 | 3) }),
+  rotateTray: () => {
+    const current = get().trayRot;
+    const steps = get().trayShape === "right" ? 8 : 4;
+    set({ trayRot: ((current + 1) % steps) as Turn });
+  },
 
   startPuzzle: (id) => {
     const { tier, completed } = get();

@@ -403,7 +403,7 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
                   key={label}
                   className={on ? "snap-chip is-on" : "snap-chip"}
                   aria-label={label}
-                  onClick={() => setTray({ trayFacing: facing, trayShape: shape, trayCutout: cutout })}
+                  onClick={() => setTray({ trayFacing: facing, trayShape: shape, trayCutout: cutout, trayRot: 0 })}
                 >
                   <TileGlyph kind={cutout === "none" ? (shape === "right" ? "right" : facing === "flat" ? "flat" : facing === "roof" ? "roof" : shape === "triangle" ? "triangle" : "wall") : cutout} />
                 </button>
@@ -431,7 +431,7 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
               {selected != null ? <Trash2 /> : <Undo2 />}
             </button>
             {trayShape === "right" ? (
-              <button className="snap-icon" aria-label="Turn this piece" onClick={rotateTray}>
+              <button className="snap-icon" aria-label="Turn this piece 45 degrees" onClick={rotateTray}>
                 <RotateCw />
               </button>
             ) : null}
