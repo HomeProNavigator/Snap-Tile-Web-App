@@ -101,6 +101,20 @@ function capped(placed: Piece[], x: number, y: number, z: number) {
   return hasFloor(placed, x, y + 1, z) && hasColumn(placed, x, y, z);
 }
 
+/** A short-end slope that closes a corner, leaning in over the end cell. */
+function isCorner(plane: "roofx" | "roofz", lean: -1 | 1, cellX: number, cellZ: number, placed: Piece[], y: number) {
+  const caps = placed.filter((piece) => piece.plane === "floor" && piece.y === y + 1);
+  if (caps.length === 0) return false;
+  if (plane === "roofx") {
+    const minZ = Math.min(...caps.map((piece) => piece.z));
+    const maxZ = Math.max(...caps.map((piece) => piece.z));
+    return lean === -1 ? cellZ === maxZ : cellZ === minZ;
+  }
+  const minX = Math.min(...caps.map((piece) => piece.x));
+  const maxX = Math.max(...caps.map((piece) => piece.x));
+  return lean === -1 ? cellX === maxX : cellX === minX;
+}
+
 /** Ridge runs along the long side of the top floor, so slopes do not stick out every wall. */
 function ridgeAxis(placed: Piece[]): "x" | "z" {
   const floors = placed.filter((piece) => piece.plane === "floor");
@@ -156,7 +170,8 @@ export function sockets(placed: Piece[], shape: Shape, color: TileColor, cutout:
     add(out, { ...base, shape: "square", cutout: "none", plane: "floor", lean: 1, x, y: y + 1, z }, used);
   };
   const roofOn = (plane: "roofx" | "roofz", lean: -1 | 1, x: number, y: number, z: number, cellX: number, cellZ: number) => {
-    if (plane === "roofx" ? axis !== "x" : axis !== "z") return;
+    const along = plane === "roofx" ? axis === "x" : axis === "z";
+    if (!along && !isCorner(plane, lean, cellX, cellZ, placed, y)) return;
     if (!capped(placed, cellX, y, cellZ)) return;
     const hinge = plane === "roofx" ? hasWall(placed, "wallz", x, y + 1, z) : hasWall(placed, "wallx", x, y + 1, z);
     if (hinge) return;
