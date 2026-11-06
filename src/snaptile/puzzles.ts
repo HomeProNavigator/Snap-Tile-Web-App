@@ -174,7 +174,7 @@ function block(wall: TileColor, roof: TileColor, base: TileColor): Piece[] {
 
 function boat(hull: TileColor, sail: TileColor, cabin: TileColor): Piece[] {
   return [
-    tile("square", "floor", 0, 0, 0, hull),
+    tile("right", "floor", 0, 0, 0, hull),
     tile("square", "floor", 1, 0, 0, hull),
     tile("square", "floor", 2, 0, 0, hull),
     tile("square", "wallz", 0, 0, 0, cabin),

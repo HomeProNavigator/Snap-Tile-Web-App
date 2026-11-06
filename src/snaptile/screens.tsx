@@ -14,8 +14,15 @@ function BadgeArt({ id, earned }: { id: string; earned: boolean }) {
   return <img className={earned ? "snap-badge-art" : "snap-badge-art is-locked"} src={`${import.meta.env.BASE_URL}badges/${id}.jpg?v=3`} alt="" />;
 }
 
-function TileGlyph({ kind, size = 36 }: { kind: "square" | "triangle" | "flat" | "wall" | "roof" | "solid" | "window" | "door"; size?: number }) {
+function TileGlyph({ kind, size = 36 }: { kind: "square" | "triangle" | "right" | "flat" | "wall" | "roof" | "solid" | "window" | "door"; size?: number }) {
   const props = { width: size, height: size, viewBox: "0 0 36 36", "aria-hidden": true as const };
+  if (kind === "right") {
+    return (
+      <svg {...props}>
+        <path d="M6 30 30 30 6 6Z" fill="currentColor" />
+      </svg>
+    );
+  }
   if (kind === "triangle") {
     return (
       <svg {...props}>
@@ -296,6 +303,7 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
   const trayCutout = useSnap((s) => s.trayCutout);
   const trayFacing = useSnap((s) => s.trayFacing);
   const setTray = useSnap((s) => s.setTray);
+  const rotateTray = useSnap((s) => s.rotateTray);
   const removeSelected = useSnap((s) => s.removeSelected);
   const undoLast = useSnap((s) => s.undoLast);
   const selected = useSnap((s) => s.selected);
@@ -384,6 +392,8 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
                 ["wall", "square", "window", "Window"],
                 ["wall", "square", "door", "Door"],
                 ["wall", "triangle", "none", "Triangle"],
+                ["flat", "right", "none", "Half floor"],
+                ["wall", "right", "none", "Half wall"],
                 ["roof", "triangle", "none", "Roof"],
               ] as const
             ).map(([facing, shape, cutout, label]) => {
@@ -395,7 +405,7 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
                   aria-label={label}
                   onClick={() => setTray({ trayFacing: facing, trayShape: shape, trayCutout: cutout })}
                 >
-                  <TileGlyph kind={cutout === "none" ? (facing === "flat" ? "flat" : facing === "roof" ? "roof" : shape === "triangle" ? "triangle" : "wall") : cutout} />
+                  <TileGlyph kind={cutout === "none" ? (shape === "right" ? "right" : facing === "flat" ? "flat" : facing === "roof" ? "roof" : shape === "triangle" ? "triangle" : "wall") : cutout} />
                 </button>
               );
             })}
@@ -417,14 +427,14 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
             </p>
           ) : null}
           <div className="snap-row">
-            <button
-              className="snap-icon"
-              aria-label={selected != null ? "Remove selected tile" : "Undo last tile"}
-              disabled={placed.length === 0}
-              onClick={() => (selected != null ? removeSelected() : undoLast())}
-            >
+            <button className="snap-icon" aria-label="Undo last tile" disabled={placed.length === 0} onClick={() => (selected != null ? removeSelected() : undoLast())}>
               {selected != null ? <Trash2 /> : <Undo2 />}
             </button>
+            {trayShape === "right" ? (
+              <button className="snap-icon" aria-label="Turn this piece" onClick={rotateTray}>
+                <RotateCw />
+              </button>
+            ) : null}
             <button className="snap-secondary" aria-label="Save" onClick={saveBuild}>
               <Bookmark />
             </button>
@@ -467,7 +477,7 @@ function PuzzleTray({ puzzlePieces }: { puzzlePieces: Piece[] }) {
             onClick={() => setHeld({ shape: piece.shape, color: piece.color, cutout: piece.cutout })}
           >
             <span
-              className={piece.shape === "triangle" ? "snap-mini is-tri" : "snap-mini"}
+              className={piece.shape === "triangle" ? "snap-mini is-tri" : piece.shape === "right" ? "snap-mini is-right" : "snap-mini"}
               style={
                 piece.shape === "triangle"
                   ? { borderBottomColor: TILE_HEX[piece.color] }

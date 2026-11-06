@@ -12,6 +12,7 @@ const geos = {
   window: makeSquare("window"),
   door: makeSquare("door"),
   triangle: makeTriangle(),
+  right: makeRight(),
 };
 
 function makeSquare(cutout: Cutout) {
@@ -53,6 +54,17 @@ function makeSquare(cutout: Cutout) {
   return geo;
 }
 
+function makeRight() {
+  const s = TILE / 2;
+  const shape = new THREE.Shape();
+  shape.moveTo(-s, -s);
+  shape.lineTo(s, -s);
+  shape.lineTo(-s, s);
+  shape.closePath();
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.09, bevelEnabled: false });
+  geo.translate(0, 0, -0.045);
+  return geo;
+}
 function makeTriangle() {
   const side = TILE;
   const h = (side * Math.sqrt(3)) / 2;
@@ -71,6 +83,7 @@ const edges = {
   window: new THREE.EdgesGeometry(geos.window, 20),
   door: new THREE.EdgesGeometry(geos.door, 20),
   triangle: new THREE.EdgesGeometry(geos.triangle, 20),
+  right: new THREE.EdgesGeometry(geos.right, 20),
 };
 
 function WindowTrim({ ghost }: { ghost?: boolean }) {
@@ -122,8 +135,8 @@ function TileMesh({
   const placedColor = TILE_HEX[piece.color];
   const color = ghost && !hidden && (!guide || bright) ? "#ffffff" : placedColor;
   const geo =
-    piece.shape === "triangle" ? geos.triangle : piece.cutout === "window" ? geos.window : piece.cutout === "door" ? geos.door : geos.square;
-  const edge = piece.shape === "triangle" ? edges.triangle : piece.cutout === "door" ? edges.door : edges.square;
+    piece.shape === "right" ? geos.right : piece.shape === "triangle" ? geos.triangle : piece.cutout === "window" ? geos.window : piece.cutout === "door" ? geos.door : geos.square;
+  const edge = piece.shape === "right" ? edges.right : piece.shape === "triangle" ? edges.triangle : piece.cutout === "door" ? edges.door : edges.square;
   const rim = ghost ? "#5c567f" : rimOf(color);
   return (
     <group>

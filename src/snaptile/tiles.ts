@@ -1,6 +1,6 @@
 import { TEST_UNLOCK } from "./test-mode";
 
-export type Shape = "square" | "triangle";
+export type Shape = "square" | "triangle" | "right";
 export type Cutout = "none" | "window" | "door";
 export type TileColor = "coral" | "gold" | "mint" | "sky" | "lilac" | "blush";
 export type Tier = "free" | "builder" | "master" | "yearly";

@@ -489,6 +489,7 @@
 .snap-kinds {
   display: flex;
   gap: 8px;
+  overflow-x: auto;
 }
 
 .snap-kinds .snap-chip {
@@ -548,6 +549,11 @@
   border-left: 14px solid transparent;
   border-right: 14px solid transparent;
   border-bottom: 26px solid #ff5c45;
+}
+
+.snap-mini.is-right {
+  border-radius: 0;
+  clip-path: polygon(0 0, 0 100%, 100% 100%);
 }
 
 .snap-colors {
