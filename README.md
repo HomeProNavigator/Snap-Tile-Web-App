@@ -11,7 +11,7 @@ npm run dev
 
 Open http://localhost:8080
 
-The family test site on Netlify unlocks every puzzle and a 100-tile free build. That switch is `VITE_TEST_UNLOCK` in `netlify.toml`. The iPhone build does not set it, so the plan limits stay on.
+The family test site on Netlify unlocks every puzzle and a 150-tile free build. That switch is `VITE_TEST_UNLOCK` in `netlify.toml`. The iPhone build does not set it, so the plan limits stay on.
 
 ## iPhone and TestFlight, Mac only
 

@@ -15,8 +15,8 @@ This file is the source you take to a Mac. An iPhone app cannot be compiled on t
 | 100 puzzles, easy through expert, guide spots fade on harder puzzles | Same puzzle list |
 | Free: 10 tiles, puzzles 1–10 | Same caps |
 | Builder $7.99/month: 50 tiles, puzzles 1–50 | Same caps, charged by Apple every month |
-| Master Builder $10.99/month: 80 tiles, all 100 puzzles | Same caps, charged by Apple every month |
-| Unlimited Yearly $49.99: 80 tiles and all 100 puzzles for a year | Auto-renewing subscription |
+| Master Builder $10.99/month: 150 tiles, all 100 puzzles | Same caps, charged by Apple every month |
+| Unlimited Yearly $49.99: 150 tiles and all 100 puzzles for a year | Auto-renewing subscription |
 | Account and Plans open directly | Same screens. No math question. |
 | Saves in `snaptile-v1` on the device | Same key, kept in the app sandbox |
 | No ads, no chat, no account server | Still none. Do not add any |
@@ -33,7 +33,7 @@ Create these in App Store Connect and in the StoreKit file below. The ids must m
 | Master Builder | `com.snaptile.master` | Auto-renewable, 1 month | $10.99 |
 | Unlimited Yearly | `com.snaptile.yearly` | Auto-renewable, 1 year | $49.99 |
 
-Free is not a product. If more than one plan is active, the app keeps the highest one. Yearly and Master both unlock 80 tiles and all 100 puzzles. When the month or year ends and nothing else is active, the app returns to Free.
+Free is not a product. If more than one plan is active, the app keeps the highest one. Yearly and Master both unlock 150 tiles and all 100 puzzles. When the month or year ends and nothing else is active, the app returns to Free.
 
 Bundle id used below: `com.snaptile.play`. Change it in every file if you register a different one.
 
@@ -497,7 +497,7 @@ Use this in Xcode (Editor, StoreKit, Create Configuration File, then replace the
           "internalID": "2",
           "introductoryOffer": null,
           "localizations": [
-            { "description": "80 tiles and all 100 puzzles.", "displayName": "Master Builder", "locale": "en_US" }
+            { "description": "150 tiles and all 100 puzzles.", "displayName": "Master Builder", "locale": "en_US" }
           ],
           "productID": "com.snaptile.master",
           "recurringSubscriptionPeriod": "P1M",
@@ -514,7 +514,7 @@ Use this in Xcode (Editor, StoreKit, Create Configuration File, then replace the
           "internalID": "4",
           "introductoryOffer": null,
           "localizations": [
-            { "description": "80 tiles and all 100 puzzles for a year.", "displayName": "Unlimited Yearly", "locale": "en_US" }
+            { "description": "150 tiles and all 100 puzzles for a year.", "displayName": "Unlimited Yearly", "locale": "en_US" }
           ],
           "productID": "com.snaptile.yearly",
           "recurringSubscriptionPeriod": "P1Y",

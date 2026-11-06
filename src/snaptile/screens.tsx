@@ -634,8 +634,8 @@ function BadgesScreen() {
 const PLANS: { id: Tier; title: string; price: string; detail: string }[] = [
   { id: "free", title: "Free", price: "$0", detail: "10 tiles and the first 10 puzzles." },
   { id: "builder", title: "Builder", price: "$7.99/month", detail: "50 tiles and 50 puzzles." },
-  { id: "master", title: "Master Builder", price: "$10.99/month", detail: "80 tiles and all 100 puzzles." },
-  { id: "yearly", title: "Unlimited Yearly", price: "$49.99/year", detail: "80 tiles and all 100 puzzles for a year." },
+  { id: "master", title: "Master Builder", price: "$10.99/month", detail: "150 tiles and all 100 puzzles." },
+  { id: "yearly", title: "Unlimited Yearly", price: "$49.99/year", detail: "150 tiles and all 100 puzzles for a year." },
 ];
 
 function Paywall() {
@@ -763,7 +763,7 @@ function TermsOfUse() {
         <h2>The license</h2>
         <p>You receive a personal, non-transferable license to use Buildlings on Apple devices you own or control. You may not copy, sell, or reverse engineer the app except where the law allows it.</p>
         <h2>Plans</h2>
-        <p>Free includes 10 tiles and puzzles 1 through 10. Builder renews every month and includes 50 tiles and puzzles 1 through 50. Master Builder renews every month and includes 80 tiles and all 100 puzzles. Unlimited Yearly renews every year and includes 80 tiles and all 100 puzzles. The price on the Plans screen is the price Apple charges in your currency.</p>
+        <p>Free includes 10 tiles and puzzles 1 through 10. Builder renews every month and includes 50 tiles and puzzles 1 through 50. Master Builder renews every month and includes 150 tiles and all 100 puzzles. Unlimited Yearly renews every year and includes 150 tiles and all 100 puzzles. The price on the Plans screen is the price Apple charges in your currency.</p>
         <p>Payment is charged to your Apple ID when you confirm. A paid plan renews for the same length and price unless you cancel at least 24 hours before the period ends. Apple charges the renewal within 24 hours before the period ends. Manage or cancel in your Apple ID subscriptions. Deleting the app does not cancel a plan. The paid plans are one group, so only one can be active. When a plan ends, the app returns to Free. Refunds are handled by Apple.</p>
         <h2>Support</h2>
         <p>Buildlings, not Apple, is responsible for the app, for support, and for product claims. The app is provided as is. If it fails an applicable warranty, you may ask Apple for a refund of the app price. Apple has no other warranty duty for the app.</p>

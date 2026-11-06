@@ -35,7 +35,7 @@
           "internalID": "2",
           "introductoryOffer": null,
           "localizations": [
-            { "description": "80 tiles and all 100 puzzles.", "displayName": "Master Builder", "locale": "en_US" }
+            { "description": "150 tiles and all 100 puzzles.", "displayName": "Master Builder", "locale": "en_US" }
           ],
           "productID": "com.snaptile.master",
           "recurringSubscriptionPeriod": "P1M",
@@ -52,7 +52,7 @@
           "internalID": "4",
           "introductoryOffer": null,
           "localizations": [
-            { "description": "80 tiles and all 100 puzzles for a year.", "displayName": "Unlimited Yearly", "locale": "en_US" }
+            { "description": "150 tiles and all 100 puzzles for a year.", "displayName": "Unlimited Yearly", "locale": "en_US" }
           ],
           "productID": "com.snaptile.yearly",
           "recurringSubscriptionPeriod": "P1Y",

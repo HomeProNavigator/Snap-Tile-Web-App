@@ -45,17 +45,17 @@ export function kindKey(kind: TileKind): string {
 export const PITCH = Math.PI / 3;
 
 export function pieceLimit(tier: Tier): number {
-  if (TEST_UNLOCK) return 80;
+  if (TEST_UNLOCK) return 150;
   if (tier === "free") return 10;
   if (tier === "builder") return 50;
-  return 80;
+  return 150;
 }
 
 export function pieceLimitLabel(tier: Tier): string {
-  if (TEST_UNLOCK) return "80";
+  if (TEST_UNLOCK) return "150";
   if (tier === "free") return "10";
   if (tier === "builder") return "50";
-  return "80";
+  return "150";
 }
 
 export function puzzleCap(tier: Tier): number {
