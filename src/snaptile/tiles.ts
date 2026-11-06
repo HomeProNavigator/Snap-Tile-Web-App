@@ -46,16 +46,22 @@ export const PITCH = Math.PI / 3;
 
 export function pieceLimit(tier: Tier): number {
   if (TEST_UNLOCK) return 150;
-  if (tier === "free") return 10;
+  if (tier === "free") return 30;
   if (tier === "builder") return 50;
   return 150;
 }
 
 export function pieceLimitLabel(tier: Tier): string {
   if (TEST_UNLOCK) return "150";
-  if (tier === "free") return "10";
+  if (tier === "free") return "30";
   if (tier === "builder") return "50";
   return "150";
+}
+
+export function pieceLocked(tier: Tier, cutout: Cutout, color: TileColor): boolean {
+  if (TEST_UNLOCK || tier !== "free") return false;
+  if (cutout === "window" || cutout === "door") return true;
+  return color === "lilac" || color === "blush";
 }
 
 export function puzzleCap(tier: Tier): number {

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { buildBadges, earnedPuzzleBadges } from "./badges";
 import { playTone, setMuted } from "./audio";
+import { haptic } from "./haptics";
 import { PUZZLES } from "./puzzles";
 import { normalizePiece, occupancyKey, pieceKey, pieceLimit, puzzleCap, sameKind, samePiece, type Cutout, type Piece, type Shape, type Tier, type TileColor, type TileKind, type Turn } from "./tiles";
 import type { Facing } from "./space";
@@ -35,6 +36,8 @@ type Persisted = {
   freeLimitHits: number;
   noHintStreak: number;
   sound: boolean;
+  mascot: string;
+  offerDay: string;
 };
 
 type State = Persisted & {
@@ -54,7 +57,12 @@ type State = Persisted & {
   hintSpot: string | null;
   notice: string | null;
   fresh: string[];
-  offer: "puzzles" | "build" | null;
+  offer: "puzzles" | null;
+  lock: "tiles" | "pieces" | null;
+  bump: number;
+  buddyFrom: string;
+  showLock: (kind: "tiles" | "pieces") => void;
+  hideLock: () => void;
   hydrate: () => void;
   setName: (name: string) => void;
   finishOnboarding: () => void;
@@ -98,6 +106,8 @@ function blank(): Persisted {
     freeLimitHits: 0,
     noHintStreak: 0,
     sound: true,
+    mascot: "cub",
+    offerDay: "",
   };
 }
 
@@ -123,6 +133,8 @@ function pick(state: State): Persisted {
     freeLimitHits: state.freeLimitHits,
     noHintStreak: state.noHintStreak,
     sound: state.sound,
+    mascot: state.mascot,
+    offerDay: state.offerDay,
   };
 }
 
@@ -153,6 +165,9 @@ export const useSnap = create<State>((set, get) => ({
   notice: null,
   fresh: [],
   offer: null,
+  lock: null,
+  bump: 0,
+  buddyFrom: "cub",
 
   hydrate: () => {
     let data = blank();
@@ -164,6 +179,8 @@ export const useSnap = create<State>((set, get) => ({
           ...blank(),
           ...parsed,
           freeLimitHits: parsed.freeLimitHits ?? 0,
+          mascot: parsed.mascot || "cub",
+          offerDay: parsed.offerDay ?? "",
           saved: (parsed.saved ?? []).map((build) => ({
             ...build,
             pieces: build.pieces.map((piece) => normalizePiece(piece)),
@@ -319,25 +336,15 @@ export const useSnap = create<State>((set, get) => ({
       return;
     }
     if (state.placed.length >= pieceLimit(state.tier)) {
-      set({
-        notice:
-          state.tier === "master" || state.tier === "yearly"
-            ? "This table is full. Take a tile off to add another."
-            : "That is every tile in this plan.",
-      });
+      if (state.tier === "free") set({ lock: "tiles", bump: state.bump + 1, notice: null });
+      else set({ notice: "This table is full. Take a tile off to add another." });
       playTone("no");
       return;
     }
     const placed = [...state.placed, next];
-    let freeLimitHits = state.freeLimitHits;
-    let offer = state.offer;
-    if (state.tier === "free" && pieceLimit(state.tier) === 10 && state.placed.length === 9) {
-      freeLimitHits += 1;
-      if (freeLimitHits % 5 === 0) offer = "build";
-    }
-    set({ placed, selected: null, notice: null, freeLimitHits, offer });
-    if (freeLimitHits !== state.freeLimitHits) persist({ ...pick(get()), freeLimitHits });
+    set({ placed, selected: null, notice: null });
     playTone("place");
+    haptic("light");
   },
 
   placeTarget: (piece) => {
@@ -368,14 +375,20 @@ export const useSnap = create<State>((set, get) => ({
       let badges = mergeBadges(state.badges, earnedPuzzleBadges(completed));
       if (noHintStreak >= 3) badges = mergeBadges(badges, ["turtle"]);
       const fresh = newcomers(state.badges, badges);
-      const offer = puzzle.id === 10 && !state.completed.includes(10) && state.tier === "free" ? "puzzles" : state.offer;
-      set({ placed, held: null, completed, noHintStreak, badges, fresh, view: "celebrate", notice: null, offer });
-      persist({ ...pick(get()), completed, noHintStreak, badges });
+      const mascot = fresh.length ? fresh[fresh.length - 1]! : state.mascot;
+      const day = new Date().toISOString().slice(0, 10);
+      const showOffer = puzzle.id === 10 && !state.completed.includes(10) && state.tier === "free" && state.offerDay !== day;
+      const offer = showOffer ? "puzzles" : state.offer;
+      const offerDay = showOffer ? day : state.offerDay;
+      set({ placed, held: null, completed, noHintStreak, badges, fresh, view: "celebrate", notice: null, offer, offerDay, mascot, buddyFrom: state.mascot });
+      persist({ ...pick(get()), completed, noHintStreak, badges, offerDay, mascot });
       playTone("win");
+      haptic("strong");
       return;
     }
     set({ placed, held: more ? state.held : null, notice: null, selected: null, hintSpot });
     playTone("place");
+    haptic("light");
   },
 
   selectPiece: (index) => {
@@ -387,7 +400,6 @@ export const useSnap = create<State>((set, get) => ({
     const { selected, placed } = get();
     if (selected == null) return;
     set({ placed: placed.filter((_, i) => i !== selected), selected: null });
-    playTone("tap");
   },
 
   undoLast: () => {
@@ -421,14 +433,30 @@ export const useSnap = create<State>((set, get) => ({
     let badges = mergeBadges(state.badges, buildBadges(state.placed, state.tier));
     if (freeBuilds >= 5) badges = mergeBadges(badges, ["monkey"]);
     const fresh = newcomers(state.badges, badges);
-    set({ freeBuilds, badges, fresh, view: "celebrate", puzzleId: null });
-    persist({ ...pick(get()), freeBuilds, badges });
+    const mascot = fresh.length ? fresh[fresh.length - 1]! : state.mascot;
+    const saved: SavedBuild = {
+      id: `${Date.now()}`,
+      name: state.name ? `${state.name}'s build` : "My build",
+      pieces: state.placed,
+      at: Date.now(),
+    };
+    const nextSaved = [saved, ...state.saved].slice(0, 12);
+    set({ freeBuilds, badges, fresh, view: "celebrate", puzzleId: null, saved: nextSaved, mascot, buddyFrom: state.mascot, selected: null });
+    persist({ ...pick(get()), freeBuilds, badges, saved: nextSaved, mascot });
     playTone("win");
+    haptic("strong");
   },
 
   dismissFresh: () => set((state) => ({ fresh: state.fresh.slice(1) })),
 
   dismissOffer: () => set({ offer: null }),
+
+  showLock: (kind) => {
+    set((state) => ({ lock: kind, bump: state.bump + 1 }));
+    playTone("no");
+  },
+
+  hideLock: () => set({ lock: null }),
 
   saveBuild: () => {
     const state = get();
@@ -464,3 +492,8 @@ export const useSnap = create<State>((set, get) => ({
 
   clearNotice: () => set({ notice: null }),
 }));
+
+if (import.meta.env.DEV && typeof window !== "undefined") {
+  (window as unknown as { __snap: typeof useSnap; __puzzles: typeof PUZZLES }).__snap = useSnap;
+  (window as unknown as { __puzzles: typeof PUZZLES }).__puzzles = PUZZLES;
+}

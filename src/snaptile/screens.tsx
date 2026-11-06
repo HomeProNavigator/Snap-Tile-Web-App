@@ -1,13 +1,18 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Award, Bookmark, Camera, Check, Hammer, Lightbulb, Lock, Puzzle, RotateCw, Trash2, Undo2, UserRound, Volume2, VolumeX } from "lucide-react";
-import { BADGES, badgeJustFinished, badgeVisible } from "./badges";
+import { ArrowLeft, Award, Eye, EyeOff, Hammer, Lightbulb, Lock, Puzzle, RotateCw, Star, Trash2, Undo2, UserRound, Volume2, VolumeX, X } from "lucide-react";
+import { BADGES, badgeVisible } from "./badges";
+import { Celebrate } from "./celebrate";
+import { playTone } from "./audio";
+import { deleteCue, setDeleteAnchor, subscribeDelete } from "./delete-anchor";
+import { MascotFace } from "./mascot";
+import { ProgressMap } from "./map";
 import { orbitLock } from "./orbit";
 import { PUZZLES, guideLabel } from "./puzzles";
 import { useSnap } from "./store";
 import { currentNative, isNativeApp, manageSubscription, storePrices } from "./native";
 import { LEGAL_UPDATED, PRIVACY_URL, SUPPORT_EMAIL, TERMS_URL } from "./legal";
 import { TEST_UNLOCK } from "./test-mode";
-import { TILE_COLORS, TILE_HEX, kindKey, pieceLimit, pieceLimitLabel, puzzleCap, tierName, type Piece, type Tier } from "./tiles";
+import { TILE_COLORS, TILE_HEX, kindKey, pieceLimit, pieceLimitLabel, pieceLocked, puzzleCap, tierName, type Piece, type Tier } from "./tiles";
 
 const TileCanvas = lazy(() => import("./TileCanvas").then((mod) => ({ default: mod.TileCanvas })));
 
@@ -125,13 +130,13 @@ function Home() {
   const tier = useSnap((s) => s.tier);
   const sound = useSnap((s) => s.sound);
   const setSound = useSnap((s) => s.setSound);
+  const mascot = useSnap((s) => s.mascot);
   const next = PUZZLES.find(
     (puzzle) =>
       !completed.includes(puzzle.id) &&
       puzzle.id <= puzzleCap(tier) &&
       (puzzle.id === 1 || completed.includes(puzzle.id - 1)),
   );
-  const progress = completed.length === 0 ? 0 : Math.round((completed.length / 100) * 100);
   return (
     <section className="snap-screen snap-home">
       <header className="snap-top">
@@ -140,6 +145,7 @@ function Home() {
           <p className="snap-tag">Magnetic tiles</p>
           <h1>{name ? `Hi, ${name}` : "Hi, builder"}</h1>
         </div>
+        <MascotFace id={mascot} />
         <button className="snap-icon" aria-label={sound ? "Turn sound off" : "Turn sound on"} onClick={() => setSound(!sound)}>
           {sound ? <Volume2 /> : <VolumeX />}
         </button>
@@ -156,10 +162,7 @@ function Home() {
         </span>
         <span className="snap-hero-go">{next ? "Play" : "See"}</span>
       </button>
-      <div className="snap-meter" aria-hidden="true">
-        <span style={{ width: `${progress}%` }} />
-      </div>
-      <p className="snap-meter-label">{completed.length} of 100 puzzles</p>
+      <ProgressMap />
       <div className="snap-grid">
         <button className="snap-choice" data-tone="coral" onClick={startFree}>
           <span className="snap-choice-icon">
@@ -238,6 +241,38 @@ function Puzzles() {
   );
 }
 
+function DeleteBubble() {
+  const selected = useSnap((s) => s.selected);
+  const removeSelected = useSnap((s) => s.removeSelected);
+  const [pos, setPos] = useState({ x: 0, y: 0, on: false });
+  useEffect(() => subscribeDelete(setPos), []);
+  if (selected == null || !pos.on) return null;
+  return (
+    <button
+      type="button"
+      className="snap-delete"
+      aria-label="Delete tile"
+      style={{ position: "fixed", left: pos.x, top: pos.y, transform: "translate(-20%, -120%)", zIndex: 30 }}
+      onPointerDown={(event) => {
+        event.stopPropagation();
+        orbitLock.picked = true;
+      }}
+      onClick={(event) => {
+        event.stopPropagation();
+        deleteCue.shrink = performance.now();
+        playTone("pop");
+        window.setTimeout(() => {
+          deleteCue.shrink = 0;
+          removeSelected();
+          setDeleteAnchor({ x: 0, y: 0, on: false });
+        }, 170);
+      }}
+    >
+      <Trash2 />
+    </button>
+  );
+}
+
 function BuildChrome({ mode }: { mode: "free" | "play" }) {
   const [yaw, setYaw] = useState(0.75);
   const [pitch, setPitch] = useState(0.48);
@@ -261,11 +296,10 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
   const trayCutout = useSnap((s) => s.trayCutout);
   const trayFacing = useSnap((s) => s.trayFacing);
   const setTray = useSnap((s) => s.setTray);
-  const removeSelected = useSnap((s) => s.removeSelected);
   const undoLast = useSnap((s) => s.undoLast);
-  const selected = useSnap((s) => s.selected);
   const finishFree = useSnap((s) => s.finishFree);
-  const saveBuild = useSnap((s) => s.saveBuild);
+  const showLock = useSnap((s) => s.showLock);
+  const bump = useSnap((s) => s.bump);
   const puzzle = PUZZLES.find((p) => p.id === puzzleId);
   const full = mode === "free" && placed.length >= pieceLimit(tier);
   const quiet = picture || full;
@@ -273,6 +307,7 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
 
   return (
     <section className="snap-play">
+      <DeleteBubble />
       <header className="snap-top snap-float">
         <button className="snap-icon" aria-label="Back" onClick={() => go(mode === "free" ? "home" : "puzzles")}>
           <ArrowLeft />
@@ -292,7 +327,7 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
             aria-pressed={picture}
             onClick={() => setPicture((on) => !on)}
           >
-            <Camera />
+            {picture ? <EyeOff /> : <Eye />}
           </button>
           <button className="snap-icon" aria-label="Turn the table" onClick={() => setYaw((value) => value + Math.PI / 4)}>
             <RotateCw />
@@ -304,6 +339,7 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
         className="snap-stage"
         onPointerDown={(event) => {
           orbitLock.moved = false;
+          orbitLock.picked = false;
           drag.current = { x: event.clientX, y: event.clientY, yaw, pitch, active: true };
         }}
         onPointerMove={(event) => {
@@ -317,7 +353,10 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
           setPitch(Math.min(1.15, Math.max(0.22, start.pitch + dy * 0.007)));
         }}
         onPointerUp={() => {
+          const moved = orbitLock.moved;
+          const picked = orbitLock.picked;
           if (drag.current) drag.current.active = false;
+          if (!moved && !picked) useSnap.setState({ selected: null });
         }}
         onPointerCancel={() => {
           if (drag.current) drag.current.active = false;
@@ -409,7 +448,7 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
       {mode === "play" && puzzle ? (
         <PuzzleTray puzzlePieces={puzzle.pieces} />
       ) : (
-        <div className="snap-tray">
+        <div className={bump ? "snap-tray is-wobble" : "snap-tray"} key={bump}>
           <div className="snap-kinds">
             {(
               [
@@ -422,43 +461,60 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
               ] as const
             ).map(([facing, shape, cutout, label]) => {
               const on = trayFacing === facing && trayShape === shape && trayCutout === cutout;
+              const locked = pieceLocked(tier, cutout, trayColor);
               return (
                 <button
                   key={label}
                   className={on ? "snap-chip is-on" : "snap-chip"}
-                  aria-label={label}
-                  onClick={() => setTray({ trayFacing: facing, trayShape: shape, trayCutout: cutout, trayRot: 0 })}
+                  aria-label={locked ? `${label} locked` : label}
+                  onClick={() => {
+                    if (pieceLocked(tier, cutout, trayColor)) {
+                      showLock("pieces");
+                      return;
+                    }
+                    setTray({ trayFacing: facing, trayShape: shape, trayCutout: cutout, trayRot: 0 });
+                  }}
                 >
                   <TileGlyph kind={cutout === "none" ? (facing === "flat" ? "flat" : facing === "roof" ? "roof" : shape === "triangle" ? "triangle" : "wall") : cutout} />
+                  {pieceLocked(tier, cutout, "coral") ? <Lock /> : null}
                 </button>
               );
             })}
           </div>
           <div className="snap-colors">
-            {TILE_COLORS.map((color) => (
-              <button
-                key={color.id}
-                aria-label={color.label}
-                className={trayColor === color.id ? "snap-swatch is-on" : "snap-swatch"}
-                data-color={color.id}
-                onClick={() => setTray({ trayColor: color.id })}
-              />
-            ))}
+            {TILE_COLORS.map((color) => {
+              const locked = pieceLocked(tier, "none", color.id);
+              return (
+                <button
+                  key={color.id}
+                  aria-label={locked ? `${color.label} locked` : color.label}
+                  className={trayColor === color.id ? "snap-swatch is-on" : "snap-swatch"}
+                  data-color={color.id}
+                  onClick={() => {
+                    if (locked) {
+                      showLock("pieces");
+                      return;
+                    }
+                    setTray({ trayColor: color.id });
+                  }}
+                >
+                  {locked ? <Lock /> : null}
+                </button>
+              );
+            })}
           </div>
           {full || picture ? (
             <p>
-              {full ? "Every tile is used. Undo one to keep building." : "Empty spots are hidden. Tap the camera to bring them back."}
+              {full ? "Every tile is used." : "Empty spots are hidden."}
             </p>
           ) : null}
           <div className="snap-row">
-            <button className="snap-icon" aria-label="Undo last tile" disabled={placed.length === 0} onClick={() => (selected != null ? removeSelected() : undoLast())}>
-              {selected != null ? <Trash2 /> : <Undo2 />}
+            <button className="snap-icon" aria-label="Undo last tile" disabled={placed.length === 0} onClick={undoLast}>
+              <Undo2 />
             </button>
-            <button className="snap-secondary" aria-label="Save" onClick={saveBuild}>
-              <Bookmark />
-            </button>
-            <button className="snap-primary" aria-label="I'm done" onClick={finishFree}>
-              <Check />
+            <button className="snap-done" aria-label="Finished" onClick={finishFree}>
+              <Star />
+              Finished
             </button>
           </div>
         </div>
@@ -522,56 +578,22 @@ function PuzzleTray({ puzzlePieces }: { puzzlePieces: Piece[] }) {
   );
 }
 
-function Celebrate() {
-  const go = useSnap((s) => s.go);
-  const puzzleId = useSnap((s) => s.puzzleId);
-  const startPuzzle = useSnap((s) => s.startPuzzle);
-  const completed = useSnap((s) => s.completed);
-  const fresh = useSnap((s) => s.fresh);
-  const dismissFresh = useSnap((s) => s.dismissFresh);
-  const puzzle = PUZZLES.find((p) => p.id === puzzleId);
-  const next = puzzle && puzzle.id < 100 ? PUZZLES.find((p) => p.id === puzzle.id + 1) : null;
-  const earned = puzzle ? badgeJustFinished(puzzle.id) : undefined;
-  const showBadge = earned && completed.includes(puzzle!.id);
-  const popped = fresh[0] ? BADGES.find((badge) => badge.id === fresh[0]) : undefined;
-  return (
-    <section className="snap-screen snap-center">
-      <p className="snap-kicker">Great Build!</p>
-      <h1>{puzzle ? puzzle.name : "Nice building"}</h1>
-      <p className="snap-lead">
-        {showBadge ? `You earned ${earned.name}.` : puzzle ? `${completed.length} of 100 puzzles finished.` : "That build stays on this device if you saved it."}
-      </p>
-      <div className="snap-row">
-        <button className="snap-secondary" onClick={() => go(puzzle ? "puzzles" : "home")}>
-          Back
-        </button>
-        {next ? (
-          <button className="snap-primary" onClick={() => startPuzzle(next.id)}>
-            Next
-          </button>
-        ) : (
-          <button className="snap-primary" onClick={() => go("home")}>
-            Home
-          </button>
-        )}
-      </div>
-      {popped ? <BadgePop badgeId={popped.id} name={popped.name} animal={popped.animal} onDone={dismissFresh} /> : null}
-    </section>
-  );
-}
-
 function BadgePop({ badgeId, name, animal, onDone }: { badgeId: string; name: string; animal: string; onDone: () => void }) {
+  const buddyFrom = useSnap((s) => s.buddyFrom);
   return (
-    <div className="snap-pop" role="dialog" aria-label={`New badge, ${name}`}>
+    <div className="snap-pop" role="dialog" aria-label={`New buddy, ${animal}`}>
       {Array.from({ length: 16 }, (_, i) => (
         <span key={i} className="snap-confetti" style={{ left: `${(i * 17) % 100}%`, animationDelay: `${(i % 6) * 0.12}s`, background: ["#ff5a7a", "#ffd15a", "#5ad1ff", "#7d5cff", "#3ddc97", "#ff8a3d"][i % 6] }} />
       ))}
-      <p className="snap-kicker">New badge!</p>
-      <img className="snap-pop-art" src={`${import.meta.env.BASE_URL}badges/${badgeId}.jpg?v=3`} alt="" />
-      <h1>{name}</h1>
-      <p>{animal}</p>
+      <p className="snap-kicker">New buddy!</p>
+      <div className="snap-buddy-swap">
+        <MascotFace id={buddyFrom} className="is-wave" />
+        <MascotFace id={badgeId} className="is-hop" />
+      </div>
+      <h1>{animal}</h1>
+      <p>{name}</p>
       <button className="snap-primary" onClick={onDone}>
-        Yay!
+        Hi!
       </button>
     </div>
   );
@@ -609,7 +631,7 @@ function BadgesScreen() {
 }
 
 const PLANS: { id: Tier; title: string; price: string; detail: string }[] = [
-  { id: "free", title: "Free", price: "$0", detail: "10 tiles and the first 10 puzzles." },
+  { id: "free", title: "Free", price: "$0", detail: "30 tiles and the first 10 puzzles." },
   { id: "builder", title: "Builder", price: "$7.99/month", detail: "50 tiles and 50 puzzles." },
   { id: "master", title: "Master Builder", price: "$10.99/month", detail: "150 tiles and all 100 puzzles." },
   { id: "yearly", title: "Unlimited Yearly", price: "$49.99/year", detail: "150 tiles and all 100 puzzles for a year." },
@@ -740,7 +762,7 @@ function TermsOfUse() {
         <h2>The license</h2>
         <p>You receive a personal, non-transferable license to use Buildlings on Apple devices you own or control. You may not copy, sell, or reverse engineer the app except where the law allows it.</p>
         <h2>Plans</h2>
-        <p>Free includes 10 tiles and puzzles 1 through 10. Builder renews every month and includes 50 tiles and puzzles 1 through 50. Master Builder renews every month and includes 150 tiles and all 100 puzzles. Unlimited Yearly renews every year and includes 150 tiles and all 100 puzzles. The price on the Plans screen is the price Apple charges in your currency.</p>
+        <p>Free includes 30 tiles and puzzles 1 through 10. Builder renews every month and includes 50 tiles and puzzles 1 through 50. Master Builder renews every month and includes 150 tiles and all 100 puzzles. Unlimited Yearly renews every year and includes 150 tiles and all 100 puzzles. The price on the Plans screen is the price Apple charges in your currency.</p>
         <p>Payment is charged to your Apple ID when you confirm. A paid plan renews for the same length and price unless you cancel at least 24 hours before the period ends. Apple charges the renewal within 24 hours before the period ends. Manage or cancel in your Apple ID subscriptions. Deleting the app does not cancel a plan. The paid plans are one group, so only one can be active. When a plan ends, the app returns to Free. Refunds are handled by Apple.</p>
         <h2>Support</h2>
         <p>Buildlings, not Apple, is responsible for the app, for support, and for product claims. The app is provided as is. If it fails an applicable warranty, you may ask Apple for a refund of the app price. Apple has no other warranty duty for the app.</p>
@@ -760,20 +782,29 @@ function UpgradeOffer() {
   const offer = useSnap((s) => s.offer);
   const dismissOffer = useSnap((s) => s.dismissOffer);
   const go = useSnap((s) => s.go);
+  const [prices, setPrices] = useState<Partial<Record<Tier, string>> | null>(null);
+  useEffect(() => {
+    if (!offer || !isNativeApp()) return;
+    void storePrices().then(setPrices);
+  }, [offer]);
   if (!offer) return null;
   return (
-    <div className="snap-pop" role="dialog" aria-label="Want more puzzles and free build pieces?">
-      <p className="snap-kicker">More to build</p>
-      <h1>Want more puzzles and free build pieces?</h1>
+    <div className="snap-pop" role="dialog" aria-label="Paid plans">
+      <p className="snap-kicker">For a parent</p>
+      <h1>The rest of the puzzles are on a paid plan.</h1>
       <div className="snap-offer-plans">
-        {PLANS.filter((plan) => plan.id !== "free").map((plan) => (
-          <p key={plan.id}>
-            <strong>
-              {plan.title} · {plan.price}
-            </strong>
-            <span>{plan.detail}</span>
-          </p>
-        ))}
+        {PLANS.filter((plan) => plan.id !== "free").map((plan) => {
+          const live = prices?.[plan.id];
+          const price = live ? `${live}${plan.id === "yearly" ? "/year" : "/month"}` : plan.price;
+          return (
+            <p key={plan.id}>
+              <strong>
+                {plan.title} · {price}
+              </strong>
+              <span>{plan.detail}</span>
+            </p>
+          );
+        })}
       </div>
       <button
         className="snap-primary"
@@ -782,11 +813,60 @@ function UpgradeOffer() {
           go("paywall");
         }}
       >
-        See plans
+        Plans
       </button>
       <button className="snap-text" onClick={dismissOffer}>
-        Not now
+        Close
       </button>
+    </div>
+  );
+}
+
+function PadlockCard() {
+  const lock = useSnap((s) => s.lock);
+  const hideLock = useSnap((s) => s.hideLock);
+  const go = useSnap((s) => s.go);
+  const [prices, setPrices] = useState<Partial<Record<Tier, string>> | null>(null);
+  useEffect(() => {
+    if (!lock || !isNativeApp()) return;
+    void storePrices().then(setPrices);
+  }, [lock]);
+  if (!lock) return null;
+  const priceOf = (id: Tier, fallback: string) => {
+    const live = prices?.[id];
+    return live ? `${live}${id === "yearly" ? "/year" : "/month"}` : fallback;
+  };
+  return (
+    <div className="snap-pop snap-lock" role="dialog" aria-label="Locked">
+      <div className="snap-lock-card">
+        <button className="snap-lock-x" aria-label="Close" onClick={hideLock}>
+          <X />
+        </button>
+        <div className="snap-lock-art" aria-hidden="true">
+          <TileGlyph kind="window" />
+          <TileGlyph kind="door" />
+          <i data-color="lilac" />
+          <i data-color="blush" />
+        </div>
+        <p>Unlock 150 tiles, windows, doors and every color.</p>
+        <div className="snap-lock-prices">
+          {PLANS.filter((plan) => plan.id !== "free").map((plan) => (
+            <p key={plan.id}>
+              <strong>{plan.title}</strong>
+              <span>{priceOf(plan.id, plan.price)}</span>
+            </p>
+          ))}
+        </div>
+        <button
+          className="snap-secondary"
+          onClick={() => {
+            hideLock();
+            go("paywall");
+          }}
+        >
+          More tiles
+        </button>
+      </div>
     </div>
   );
 }
@@ -870,6 +950,8 @@ export function SnapApp() {
   const view = useSnap((s) => s.view);
   const offer = useSnap((s) => s.offer);
   const fresh = useSnap((s) => s.fresh);
+  const dismissFresh = useSnap((s) => s.dismissFresh);
+  const popped = fresh[0] ? BADGES.find((badge) => badge.id === fresh[0]) : undefined;
   useEffect(() => {
     hydrate();
     void currentNative().then((tier) => {
@@ -891,6 +973,8 @@ export function SnapApp() {
       {view === "privacy" ? <PrivacyPolicy /> : null}
       {view === "terms" ? <TermsOfUse /> : null}
       {offer && fresh.length === 0 ? <UpgradeOffer /> : null}
+      {popped ? <BadgePop badgeId={popped.id} name={popped.name} animal={popped.animal} onDone={dismissFresh} /> : null}
+      <PadlockCard />
     </main>
   );
 }

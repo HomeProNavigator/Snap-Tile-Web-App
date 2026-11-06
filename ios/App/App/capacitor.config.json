@@ -13,6 +13,7 @@
 		"androidScheme": "https"
 	},
 	"packageClassList": [
+		"HapticsPlugin",
 		"SnapBillingPlugin"
 	]
 }

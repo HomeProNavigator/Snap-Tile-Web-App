@@ -1,1 +1,1 @@
-export const orbitLock = { moved: false };
+export const orbitLock = { moved: false, picked: false };

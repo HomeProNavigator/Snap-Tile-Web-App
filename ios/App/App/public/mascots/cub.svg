@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Buildlings bear cub">
+  <circle cx="34" cy="34" r="18" fill="#8a5a32"/>
+  <circle cx="94" cy="34" r="18" fill="#8a5a32"/>
+  <circle cx="34" cy="34" r="9" fill="#f2c7a0"/>
+  <circle cx="94" cy="34" r="9" fill="#f2c7a0"/>
+  <circle cx="64" cy="72" r="40" fill="#c4844a"/>
+  <ellipse cx="64" cy="82" rx="22" ry="16" fill="#f6d7b8"/>
+  <circle cx="50" cy="66" r="5" fill="#2c2644"/>
+  <circle cx="78" cy="66" r="5" fill="#2c2644"/>
+  <ellipse cx="64" cy="80" rx="7" ry="5" fill="#6b3a22"/>
+  <path d="M56 86 Q64 94 72 86" fill="none" stroke="#6b3a22" stroke-width="3" stroke-linecap="round"/>
+</svg>

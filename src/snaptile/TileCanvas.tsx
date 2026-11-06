@@ -1,5 +1,6 @@
-import { Canvas, useThree } from "@react-three/fiber";
-import { useLayoutEffect, useMemo } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useLayoutEffect, useMemo, useRef } from "react";
+import { deleteCue, setDeleteAnchor } from "./delete-anchor";
 import * as THREE from "three";
 import { orbitLock } from "./orbit";
 import { guidanceCount, PUZZLES } from "./puzzles";
@@ -136,6 +137,7 @@ function TileMesh({
   guide,
   hidden,
   selected,
+  arrive,
   onPick,
 }: {
   piece: Piece;
@@ -144,6 +146,7 @@ function TileMesh({
   guide?: boolean;
   hidden?: boolean;
   selected?: boolean;
+  arrive?: boolean;
   onPick?: () => void;
 }) {
   const placedColor = TILE_HEX[piece.color];
@@ -171,14 +174,52 @@ function TileMesh({
             ? edges.arch
             : edges.square;
   const rim = ghost ? "#5c567f" : rimOf(color);
+  const group = useRef<THREE.Group>(null);
+  const born = useRef(arrive ? performance.now() : 0);
+  const { camera, gl } = useThree();
+  const spot = useMemo(() => new THREE.Vector3(), []);
+  useFrame(() => {
+    const node = group.current;
+    if (!node) return;
+    let scale = 1;
+    let lift = 0;
+    let wobble = 0;
+    if (arrive && born.current) {
+      const t = Math.min(1, (performance.now() - born.current) / 160);
+      const overshoot = Math.sin(t * Math.PI) * (1 - t) * 0.18;
+      scale = 0.86 + 0.14 * t + overshoot;
+      lift = (1 - t) * 0.28;
+    }
+    if (selected && !ghost) {
+      lift += 0.12;
+      wobble = Math.sin(performance.now() / 90) * 0.08;
+      node.getWorldPosition(spot);
+      spot.y += 0.45;
+      spot.project(camera);
+      const rect = gl.domElement.getBoundingClientRect();
+      setDeleteAnchor({
+        on: true,
+        x: rect.left + (spot.x * 0.5 + 0.5) * rect.width,
+        y: rect.top + (-spot.y * 0.5 + 0.5) * rect.height,
+      });
+    }
+    if (deleteCue.shrink) {
+      const t = Math.min(1, (performance.now() - deleteCue.shrink) / 160);
+      scale *= 1 - t;
+    }
+    node.scale.setScalar(Math.max(0.001, scale));
+    node.position.y = lift;
+    node.rotation.z = wobble;
+  });
   return (
-    <group>
+    <group ref={group}>
       <mesh
         geometry={geo}
         onClick={
           onPick
             ? (event) => {
                 event.stopPropagation();
+                orbitLock.picked = true;
                 if (orbitLock.moved) return;
                 onPick();
               }
@@ -221,6 +262,7 @@ function TileView({
   guide,
   hidden,
   selected,
+  arrive,
   onPick,
   seat,
 }: {
@@ -233,10 +275,11 @@ function TileView({
   guide?: boolean;
   hidden?: boolean;
   selected?: boolean;
+  arrive?: boolean;
   onPick?: () => void;
   seat?: number;
 }) {
-  const mesh = <TileMesh piece={piece} ghost={ghost} bright={bright} guide={guide} hidden={hidden} selected={selected} onPick={onPick} />;
+  const mesh = <TileMesh piece={piece} ghost={ghost} bright={bright} guide={guide} hidden={hidden} selected={selected} arrive={arrive} onPick={onPick} />;
   const at = (x: number, y: number, z: number): [number, number, number] => [x - ox, y - oy, z - oz];
   if (piece.shape === "wheel") {
     const outward = 0.34;
@@ -251,6 +294,7 @@ function TileView({
           onPick
             ? (event) => {
                 event.stopPropagation();
+                orbitLock.picked = true;
                 if (orbitLock.moved) return;
                 onPick();
               }
@@ -377,13 +421,21 @@ function bounds(pieces: Piece[], family: Piece[] = pieces) {
   };
 }
 
-function PreviewScene({ pieces, yaw, pitch, zoom = 1 }: { pieces: Piece[]; yaw: number; pitch: number; zoom?: number }) {
+function PreviewScene({ pieces, yaw, pitch, zoom = 1, glow = -1 }: { pieces: Piece[]; yaw: number; pitch: number; zoom?: number; glow?: number }) {
   const box = useMemo(() => bounds(pieces), [pieces]);
   return (
     <>
       <FitCamera yaw={yaw} pitch={pitch} span={box.span} zoom={zoom} />
       {pieces.map((piece, index) => (
-        <TileView key={`r-${index}-${pieceKey(piece)}`} piece={piece} ox={box.ox} oy={box.oy} oz={box.oz} seat={roofHingeY(piece, pieces)} />
+        <TileView
+          key={`r-${index}-${pieceKey(piece)}`}
+          piece={piece}
+          ox={box.ox}
+          oy={box.oy}
+          oz={box.oz}
+          seat={roofHingeY(piece, pieces)}
+          selected={glow >= 0 && index === glow % pieces.length}
+        />
       ))}
     </>
   );
@@ -511,6 +563,7 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
           oz={box.oz}
           seat={roofHingeY(piece, family)}
           selected={selected === index}
+          arrive={index === placed.length - 1}
           onPick={puzzle ? undefined : () => selectPiece(index)}
         />
       ))}
@@ -518,7 +571,7 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
   );
 }
 
-export function TileCanvas({ yaw, pitch, preview, quiet, zoom = 1 }: { yaw: number; pitch: number; preview?: Piece[]; quiet?: boolean; zoom?: number }) {
+export function TileCanvas({ yaw, pitch, preview, quiet, zoom = 1, glow = -1 }: { yaw: number; pitch: number; preview?: Piece[]; quiet?: boolean; zoom?: number; glow?: number }) {
   return (
     <Canvas camera={{ position: [4.2, 3.2, 4.2], fov: 32, near: 0.1, far: 80 }} dpr={[1, 1.6]} gl={{ antialias: true, alpha: true }}>
       <color attach="background" args={["#e7e4fb"]} />
@@ -526,7 +579,7 @@ export function TileCanvas({ yaw, pitch, preview, quiet, zoom = 1 }: { yaw: numb
       <hemisphereLight args={["#fff4ea", "#c9d4f5", 0.55]} />
       <directionalLight position={[4, 8, 3]} intensity={1.25} />
       <directionalLight position={[-3, 4, -2]} intensity={0.4} />
-      {preview ? <PreviewScene pieces={preview} yaw={yaw} pitch={pitch} zoom={zoom} /> : <Scene yaw={yaw} pitch={pitch} quiet={quiet} />}
+      {preview ? <PreviewScene pieces={preview} yaw={yaw} pitch={pitch} zoom={zoom} glow={glow} /> : <Scene yaw={yaw} pitch={pitch} quiet={quiet} />}
     </Canvas>
   );
 }
