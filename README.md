@@ -25,8 +25,8 @@ In Xcode choose Product, then Archive, then upload to App Store Connect. Leave `
 
 Apple purchases use these product ids:
 
-- `com.snaptile.builder`
-- `com.snaptile.master`
-- `com.snaptile.yearly`
+- `com.buildlings.builder`
+- `com.buildlings.master`
+- `com.buildlings.yearly`
 
 Create them in App Store Connect before a purchase can succeed. The rest of the game runs without them.

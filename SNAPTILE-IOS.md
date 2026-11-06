@@ -29,13 +29,13 @@ Create these in App Store Connect and in the StoreKit file below. The ids must m
 
 | Plan | Product id | Type | Price |
 |---|---|---|---|
-| Builder | `com.snaptile.builder` | Auto-renewable, 1 month | $7.99 |
-| Master Builder | `com.snaptile.master` | Auto-renewable, 1 month | $10.99 |
-| Unlimited Yearly | `com.snaptile.yearly` | Auto-renewable, 1 year | $49.99 |
+| Builder | `com.buildlings.builder` | Auto-renewable, 1 month | $7.99 |
+| Master Builder | `com.buildlings.master` | Auto-renewable, 1 month | $10.99 |
+| Unlimited Yearly | `com.buildlings.yearly` | Auto-renewable, 1 year | $49.99 |
 
 Free is not a product. If more than one plan is active, the app keeps the highest one. Yearly and Master both unlock 150 tiles and all 100 puzzles. When the month or year ends and nothing else is active, the app returns to Free.
 
-Bundle id used below: `com.snaptile.play`. Change it in every file if you register a different one.
+Register the bundle id `com.buildlings.play`. Do not change it after the app exists in App Store Connect.
 
 ---
 
@@ -69,7 +69,7 @@ The site today is a TanStack Start server app. The iPhone build must be a static
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.snaptile.play",
+  appId: "com.buildlings.play",
   appName: "Buildlings",
   webDir: "dist",
   backgroundColor: "#e7e4fb",
@@ -119,9 +119,9 @@ type BillingBridge = {
 };
 
 const IDS: Record<Exclude<Tier, "free">, string> = {
-  builder: "com.snaptile.builder",
-  master: "com.snaptile.master",
-  yearly: "com.snaptile.yearly",
+  builder: "com.buildlings.builder",
+  master: "com.buildlings.master",
+  yearly: "com.buildlings.yearly",
 };
 
 function bridge(): BillingBridge | null {
@@ -234,9 +234,9 @@ public class SnapBillingPlugin: CAPPlugin, CAPBridgedPlugin {
     ]
 
     private let ids = [
-        "com.snaptile.builder",
-        "com.snaptile.master",
-        "com.snaptile.yearly",
+        "com.buildlings.builder",
+        "com.buildlings.master",
+        "com.buildlings.yearly",
     ]
 
     public override func load() {
@@ -322,9 +322,9 @@ public class SnapBillingPlugin: CAPPlugin, CAPBridgedPlugin {
                 owned.insert(transaction.productID)
             }
         }
-        if owned.contains("com.snaptile.yearly") { return .yearly }
-        if owned.contains("com.snaptile.master") { return .master }
-        if owned.contains("com.snaptile.builder") { return .builder }
+        if owned.contains("com.buildlings.yearly") { return .yearly }
+        if owned.contains("com.buildlings.master") { return .master }
+        if owned.contains("com.buildlings.builder") { return .builder }
         return .free
     }
 }
@@ -390,7 +390,7 @@ Set these keys. Leave out camera, microphone, location, contacts, tracking, and 
 <key>CFBundleDisplayName</key>
 <string>Buildlings</string>
 <key>CFBundleIdentifier</key>
-<string>com.snaptile.play</string>
+<string>com.buildlings.play</string>
 <key>CFBundleShortVersionString</key>
 <string>1.0.0</string>
 <key>CFBundleVersion</key>
@@ -482,7 +482,7 @@ Use this in Xcode (Editor, StoreKit, Create Configuration File, then replace the
           "localizations": [
             { "description": "50 tiles and 50 puzzles.", "displayName": "Builder", "locale": "en_US" }
           ],
-          "productID": "com.snaptile.builder",
+          "productID": "com.buildlings.builder",
           "recurringSubscriptionPeriod": "P1M",
           "referenceName": "Builder",
           "subscriptionGroupID": "3",
@@ -499,7 +499,7 @@ Use this in Xcode (Editor, StoreKit, Create Configuration File, then replace the
           "localizations": [
             { "description": "150 tiles and all 100 puzzles.", "displayName": "Master Builder", "locale": "en_US" }
           ],
-          "productID": "com.snaptile.master",
+          "productID": "com.buildlings.master",
           "recurringSubscriptionPeriod": "P1M",
           "referenceName": "Master Builder",
           "subscriptionGroupID": "3",
@@ -516,7 +516,7 @@ Use this in Xcode (Editor, StoreKit, Create Configuration File, then replace the
           "localizations": [
             { "description": "150 tiles and all 100 puzzles for a year.", "displayName": "Unlimited Yearly", "locale": "en_US" }
           ],
-          "productID": "com.snaptile.yearly",
+          "productID": "com.buildlings.yearly",
           "recurringSubscriptionPeriod": "P1Y",
           "referenceName": "Unlimited Yearly",
           "subscriptionGroupID": "3",
@@ -542,7 +542,7 @@ npx cap open ios
 
 In Xcode:
 
-1. Set the signing team and bundle id `com.snaptile.play`.
+1. Set the signing team and bundle id `com.buildlings.play`.
 2. Set the deployment target to iOS 16 so StoreKit 2 is available.
 3. Add a 1024×1024 app icon. No transparency, no rounded corners. Xcode generates the other sizes.
 4. Run on an iPhone, not only the simulator. The 3D camera and the tile tray need a real thumb.

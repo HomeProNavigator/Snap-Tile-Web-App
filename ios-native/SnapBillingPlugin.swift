@@ -30,7 +30,7 @@ public class SnapBillingPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func prices(_ call: CAPPluginCall) {
-        let ids = ["com.snaptile.builder", "com.snaptile.master", "com.snaptile.yearly"]
+        let ids = ["com.buildlings.builder", "com.buildlings.master", "com.buildlings.yearly"]
         Task {
             do {
                 let products = try await Product.products(for: ids)
@@ -130,9 +130,9 @@ public class SnapBillingPlugin: CAPPlugin, CAPBridgedPlugin {
                 owned.insert(transaction.productID)
             }
         }
-        if owned.contains("com.snaptile.yearly") { return .yearly }
-        if owned.contains("com.snaptile.master") { return .master }
-        if owned.contains("com.snaptile.builder") { return .builder }
+        if owned.contains("com.buildlings.yearly") { return .yearly }
+        if owned.contains("com.buildlings.master") { return .master }
+        if owned.contains("com.buildlings.builder") { return .builder }
         return .free
     }
 }

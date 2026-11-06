@@ -20,7 +20,7 @@
           "localizations": [
             { "description": "50 tiles and 50 puzzles.", "displayName": "Builder", "locale": "en_US" }
           ],
-          "productID": "com.snaptile.builder",
+          "productID": "com.buildlings.builder",
           "recurringSubscriptionPeriod": "P1M",
           "referenceName": "Builder",
           "subscriptionGroupID": "3",
@@ -37,7 +37,7 @@
           "localizations": [
             { "description": "150 tiles and all 100 puzzles.", "displayName": "Master Builder", "locale": "en_US" }
           ],
-          "productID": "com.snaptile.master",
+          "productID": "com.buildlings.master",
           "recurringSubscriptionPeriod": "P1M",
           "referenceName": "Master Builder",
           "subscriptionGroupID": "3",
@@ -54,7 +54,7 @@
           "localizations": [
             { "description": "150 tiles and all 100 puzzles for a year.", "displayName": "Unlimited Yearly", "locale": "en_US" }
           ],
-          "productID": "com.snaptile.yearly",
+          "productID": "com.buildlings.yearly",
           "recurringSubscriptionPeriod": "P1Y",
           "referenceName": "Unlimited Yearly",
           "subscriptionGroupID": "3",

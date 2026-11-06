@@ -6,7 +6,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 const live = process.env.CAP_SERVER_URL;
 
 const config: CapacitorConfig = {
-  appId: "com.snaptile.play",
+  appId: "com.buildlings.play",
   appName: "Buildlings",
   webDir: "dist-ios",
   backgroundColor: "#f4efe6",

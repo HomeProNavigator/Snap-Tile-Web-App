@@ -12,9 +12,9 @@ type SnapBilling = {
 const SnapBilling = registerPlugin<SnapBilling>("SnapBilling");
 
 const IDS: Record<Exclude<Tier, "free">, string> = {
-  builder: "com.snaptile.builder",
-  master: "com.snaptile.master",
-  yearly: "com.snaptile.yearly",
+  builder: "com.buildlings.builder",
+  master: "com.buildlings.master",
+  yearly: "com.buildlings.yearly",
 };
 
 /** True only inside the iPhone app. The Windows and Mac dev server stays false. */
@@ -50,9 +50,9 @@ export async function storePrices(): Promise<Partial<Record<Exclude<Tier, "free"
   try {
     const result = await SnapBilling.prices();
     return {
-      builder: result?.["com.snaptile.builder"],
-      master: result?.["com.snaptile.master"],
-      yearly: result?.["com.snaptile.yearly"],
+      builder: result?.["com.buildlings.builder"],
+      master: result?.["com.buildlings.master"],
+      yearly: result?.["com.buildlings.yearly"],
     };
   } catch {
     return {};
