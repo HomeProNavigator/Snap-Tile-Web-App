@@ -2,6 +2,7 @@
 @import "@fontsource/nunito/600.css";
 @import "@fontsource/nunito/700.css";
 @import "@fontsource/nunito/800.css";
+@import "@fontsource/nunito/900.css";
 @import "@fontsource/fraunces/600.css";
 @import "@fontsource/fraunces/700.css";
 @import "tailwindcss";
@@ -1035,8 +1036,8 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  object-fit: cover;
-  background: #fff;
+  object-fit: contain;
+  background: #f6e6c8;
   box-shadow: 0 8px 16px rgb(70 50 120 / 16%);
 }
 
@@ -1415,6 +1416,508 @@
   margin: 8px 0 0;
   font-size: 1.05rem;
 }
+
+.trail-preview {
+  position: relative;
+  height: 340px;
+  margin: 10px 0 14px;
+  border: 0;
+  border-radius: 28px;
+  overflow: hidden;
+  background: #d7f3df;
+  box-shadow: inset 0 0 0 4px #fff, 0 14px 28px rgb(70 50 120 / 14%);
+}
+
+.trail-shift {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+}
+
+.trail-preview-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  border: 0;
+  background: transparent;
+}
+
+.trail-screen {
+  width: 100%;
+}
+
+.trail-screen.is-far .trail-clip {
+  overflow: hidden;
+}
+
+.trail-screen.is-far .trail-panel {
+  height: calc(100dvh / 11);
+  min-height: 0;
+  aspect-ratio: auto;
+}
+
+.trail-screen.is-far .trail-stone,
+.trail-screen.is-far .trail-house,
+.trail-screen.is-far .trail-gate,
+.trail-screen.is-far .trail-collection,
+.trail-screen.is-far .trail-tease,
+.trail-screen.is-far .trail-cloud {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.trail-screen.is-far .trail-road path {
+  stroke-width: 16px;
+}
+
+.trail-screen.is-far .trail-workshop {
+  width: 46px;
+  bottom: 2px;
+}
+
+.trail-screen.is-far .trail-castle-slot {
+  width: 78px;
+  top: 0;
+}
+
+.trail-screen.is-far .trail-pawn {
+  width: 54px;
+  height: 64px;
+  margin-top: -72px;
+}
+
+.trail-screen.is-far .trail-pawn-art .snap-mascot-face {
+  width: 48px;
+  height: 48px;
+}
+
+.trail-screen.is-far .trail-pedestal {
+  width: 40px;
+  height: 16px;
+}
+
+.trail-back,
+.trail-zoom {
+  position: fixed;
+  z-index: 30;
+  top: calc(12px + env(safe-area-inset-top));
+  border: 0;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: #2c2644;
+  box-shadow: 0 10px 22px rgb(44 38 68 / 18%);
+}
+
+.trail-back {
+  left: 12px;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+}
+
+.trail-zoom {
+  right: 12px;
+  width: 80px;
+  height: 80px;
+  border-radius: 24px;
+}
+
+.trail-back svg { width: 28px; height: 28px; }
+.trail-zoom svg { width: 40px; height: 40px; }
+
+.trail-world {
+  position: relative;
+  width: 100%;
+}
+
+.trail-panel {
+  position: relative;
+  width: 100%;
+  min-height: var(--min-h, 980px);
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  background: var(--seam, #f4efe6);
+}
+
+.trail-panel > img.trail-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.trail-panel::before,
+.trail-panel::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 36px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.trail-panel::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--seam), transparent);
+}
+
+.trail-panel::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--seam), transparent);
+}
+
+.trail-road {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.trail-stone {
+  position: absolute;
+  z-index: 3;
+  width: 78px;
+  height: 78px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(160deg, rgb(255 255 255 / 78%), rgb(255 255 255 / 28%));
+  box-shadow:
+    inset 0 0 0 3px rgb(255 255 255 / 90%),
+    inset 0 -10px 14px rgb(90 70 40 / 12%),
+    0 7px 0 rgb(90 60 30 / 16%);
+  color: #4a4030;
+  font-family: Nunito, ui-sans-serif, sans-serif;
+  font-weight: 900;
+  font-size: 1.2rem;
+}
+
+.trail-stone em {
+  position: relative;
+  z-index: 1;
+  font-family: Nunito, ui-sans-serif, sans-serif;
+  font-style: normal;
+  font-weight: 900;
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 75%), 0 -1px 0 rgb(70 45 20 / 28%);
+}
+
+.trail-stone.is-done {
+  color: #fff;
+}
+
+.trail-stone.is-done em {
+  text-shadow: 0 2px 0 rgb(0 0 0 / 28%), 0 -1px 0 rgb(255 255 255 / 35%);
+}
+
+.trail-stone.is-now {
+  width: 100px;
+  height: 100px;
+  z-index: 4;
+  box-shadow:
+    inset 0 0 0 3px #fff,
+    0 0 0 8px rgb(255 210 80 / 55%),
+    0 8px 0 rgb(90 60 30 / 16%);
+  animation: trail-pulse 1.8s ease-out infinite;
+}
+
+.trail-stone.is-locked {
+  opacity: 0.48;
+  filter: saturate(0.35);
+}
+
+.trail-stamp {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 34px;
+  height: 34px;
+  z-index: 2;
+}
+
+.trail-stamp .snap-sticker { width: 100%; height: 100%; }
+
+.trail-spark {
+  position: absolute;
+  left: -10px;
+  top: -14px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 8px #fff6c2;
+  opacity: 0;
+  animation: trail-twinkle 4.8s ease-in-out infinite;
+}
+
+.trail-gate {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 188px;
+  max-width: none;
+  height: auto;
+  transform: translate(-50%, -58%);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.trail-gate.is-wobble { animation: snap-wobble 0.42s ease; }
+
+.trail-house {
+  position: absolute;
+  z-index: 2;
+  width: 96px;
+  transform: translate(-50%, -82%);
+  pointer-events: none;
+}
+
+.trail-house > img:first-child { width: 100%; height: auto; display: block; }
+
+.trail-house-pal,
+.trail-house-sil {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  object-fit: contain;
+}
+
+.trail-house-pal {
+  bottom: 7%;
+  width: 48%;
+  filter: drop-shadow(0 5px 3px rgb(70 40 20 / 28%));
+}
+
+.trail-house-sil {
+  top: 31%;
+  width: 30%;
+  opacity: 0.95;
+  z-index: 1;
+}
+
+.trail-house.is-off::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 33%;
+  width: 30%;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, #d7ecff 0%, #7eb6e4 62%, transparent 70%);
+  z-index: 0;
+}
+
+.trail-castle-slot {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(62%, 220px);
+  transform: translateX(-50%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.trail-castle {
+  width: 100%;
+  height: auto;
+  display: block;
+  transform-origin: 50% 90%;
+  animation: trail-sway 3.6s ease-in-out infinite;
+}
+
+.trail-castle-glow {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  width: 46%;
+  height: 18%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse, rgb(255 214 110 / 80%), transparent 70%);
+  animation: trail-glow 2.6s ease-in-out infinite;
+}
+
+.trail-castle-stand {
+  position: absolute;
+  left: 50%;
+  bottom: 4%;
+  width: 28px;
+  height: 28px;
+  transform: translateX(-50%);
+}
+
+.trail-workshop {
+  position: absolute;
+  left: 50%;
+  bottom: 70px;
+  width: 122px;
+  transform: translateX(-50%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.trail-tease {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 64px;
+  z-index: 2;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 8px rgb(80 40 80 / 25%));
+}
+
+.trail-collection {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  z-index: 4;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.trail-collection span {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #fff8ea;
+  box-shadow: inset 0 0 0 3px #e4d3b0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  opacity: 0.72;
+}
+
+.trail-collection span.is-on {
+  opacity: 1;
+  box-shadow: inset 0 0 0 3px #ffb20a, 0 6px 12px rgb(180 120 20 / 25%);
+}
+
+.trail-collection img { width: 86%; height: 86%; object-fit: contain; }
+
+.trail-cloud {
+  position: absolute;
+  top: 12%;
+  left: 4%;
+  width: min(34%, 160px);
+  z-index: 2;
+  pointer-events: none;
+  animation: trail-drift 36s linear infinite;
+}
+
+.trail-pawn {
+  position: absolute;
+  z-index: 6;
+  width: 110px;
+  height: 128px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: grid;
+  place-items: end center;
+}
+
+.trail-pawn-art {
+  display: block;
+  animation: trail-bob 2s ease-in-out infinite;
+}
+
+.trail-pawn-art .snap-mascot-face {
+  width: 104px;
+  height: 104px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  object-fit: contain;
+}
+
+.trail-pedestal {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 78px;
+  height: 32px;
+  transform: translateX(-50%);
+}
+
+.trail-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 54px;
+  height: 12px;
+  transform: translateX(-50%);
+  background: rgb(60 40 20 / 25%);
+  filter: blur(3px);
+  border-radius: 50%;
+}
+
+.trail-pawn.is-wiggle { animation: trail-wiggle 0.42s ease; }
+
+@keyframes trail-bob {
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes trail-wiggle {
+  0%, 100% { transform: translate(-50%, -108%) rotate(0); }
+  30% { transform: translate(calc(-50% - 8px), -108%) rotate(-4deg); }
+  70% { transform: translate(calc(-50% + 8px), -108%) rotate(4deg); }
+}
+
+@keyframes trail-pulse {
+  0% { box-shadow: inset 0 0 0 3px #fff, 0 0 0 4px rgb(255 210 80 / 35%), 0 8px 0 rgb(90 60 30 / 16%); }
+  70% { box-shadow: inset 0 0 0 3px #fff, 0 0 0 14px rgb(255 210 80 / 0%), 0 8px 0 rgb(90 60 30 / 16%); }
+  100% { box-shadow: inset 0 0 0 3px #fff, 0 0 0 4px rgb(255 210 80 / 35%), 0 8px 0 rgb(90 60 30 / 16%); }
+}
+
+@keyframes trail-twinkle {
+  0%, 78%, 100% { opacity: 0; transform: scale(0.6); }
+  86% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes trail-sway {
+  50% { transform: rotate(1.1deg); }
+}
+
+@keyframes trail-glow {
+  50% { opacity: 0.45; }
+}
+
+@keyframes trail-drift {
+  from { transform: translateX(-8%); }
+  to { transform: translateX(30%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trail-pawn-art,
+  .trail-castle,
+  .trail-cloud,
+  .trail-spark,
+  .trail-castle-glow,
+  .trail-stone.is-now,
+  .trail-pawn.is-wiggle {
+    animation: none;
+  }
+}
+
 
 .snap-doc-body a {
   color: var(--color-primary);

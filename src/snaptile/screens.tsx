@@ -5,7 +5,7 @@ import { Celebrate } from "./celebrate";
 import { playTone } from "./audio";
 import { deleteCue, setDeleteAnchor, subscribeDelete } from "./delete-anchor";
 import { MascotFace } from "./mascot";
-import { ProgressMap } from "./map";
+import { TrailPreview, TrailScreen } from "./map";
 import { orbitLock } from "./orbit";
 import { PUZZLES, guideLabel } from "./puzzles";
 import { useSnap } from "./store";
@@ -162,7 +162,7 @@ function Home() {
         </span>
         <span className="snap-hero-go">{next ? "Play" : "See"}</span>
       </button>
-      <ProgressMap />
+      <TrailPreview />
       <div className="snap-grid">
         <button className="snap-choice" data-tone="coral" onClick={startFree}>
           <span className="snap-choice-icon">
@@ -963,6 +963,7 @@ export function SnapApp() {
     <main className="snap-app">
       {view === "onboarding" ? <Onboarding /> : null}
       {view === "home" ? <Home /> : null}
+      {view === "trail" ? <TrailScreen /> : null}
       {view === "free" ? <BuildChrome mode="free" /> : null}
       {view === "puzzles" ? <Puzzles /> : null}
       {view === "play" ? <BuildChrome mode="play" /> : null}

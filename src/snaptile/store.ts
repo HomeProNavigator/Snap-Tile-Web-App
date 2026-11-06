@@ -22,7 +22,8 @@ export type View =
   | "account"
   | "paywall"
   | "privacy"
-  | "terms";
+  | "terms"
+  | "trail";
 
 type Persisted = {
   onboarded: boolean;
@@ -61,8 +62,10 @@ type State = Persisted & {
   lock: "tiles" | "pieces" | null;
   bump: number;
   buddyFrom: string;
+  hop: { from: number; to: number } | null;
   showLock: (kind: "tiles" | "pieces") => void;
   hideLock: () => void;
+  clearHop: () => void;
   hydrate: () => void;
   setName: (name: string) => void;
   finishOnboarding: () => void;
@@ -168,6 +171,7 @@ export const useSnap = create<State>((set, get) => ({
   lock: null,
   bump: 0,
   buddyFrom: "cub",
+  hop: null,
 
   hydrate: () => {
     let data = blank();
@@ -380,7 +384,9 @@ export const useSnap = create<State>((set, get) => ({
       const showOffer = puzzle.id === 10 && !state.completed.includes(10) && state.tier === "free" && state.offerDay !== day;
       const offer = showOffer ? "puzzles" : state.offer;
       const offerDay = showOffer ? day : state.offerDay;
-      set({ placed, held: null, completed, noHintStreak, badges, fresh, view: "celebrate", notice: null, offer, offerDay, mascot, buddyFrom: state.mascot });
+      const firstClear = !state.completed.includes(puzzle.id);
+      const hop = firstClear ? { from: puzzle.id, to: puzzle.id < 100 ? puzzle.id + 1 : 101 } : state.hop;
+      set({ placed, held: null, completed, noHintStreak, badges, fresh, view: "celebrate", notice: null, offer, offerDay, mascot, buddyFrom: state.mascot, hop });
       persist({ ...pick(get()), completed, noHintStreak, badges, offerDay, mascot });
       playTone("win");
       haptic("strong");
@@ -457,6 +463,8 @@ export const useSnap = create<State>((set, get) => ({
   },
 
   hideLock: () => set({ lock: null }),
+
+  clearHop: () => set({ hop: null }),
 
   saveBuild: () => {
     const state = get();
