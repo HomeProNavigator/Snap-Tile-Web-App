@@ -30,6 +30,7 @@ type Persisted = {
   badges: string[];
   saved: SavedBuild[];
   freeBuilds: number;
+  freeLimitHits: number;
   noHintStreak: number;
   sound: boolean;
 };
@@ -52,6 +53,7 @@ type State = Persisted & {
   fresh: string[];
   gateOpen: boolean;
   gateNext: "account" | "paywall" | null;
+  offer: "puzzles" | "build" | null;
   hydrate: () => void;
   setName: (name: string) => void;
   finishOnboarding: () => void;
@@ -78,6 +80,7 @@ type State = Persisted & {
   useHint: () => void;
   finishFree: () => void;
   dismissFresh: () => void;
+  dismissOffer: () => void;
   saveBuild: () => void;
   loadBuild: (id: string) => void;
   clearNotice: () => void;
@@ -93,6 +96,7 @@ function blank(): Persisted {
     badges: [],
     saved: [],
     freeBuilds: 0,
+    freeLimitHits: 0,
     noHintStreak: 0,
     sound: true,
   };
@@ -117,6 +121,7 @@ function pick(state: State): Persisted {
     badges: state.badges,
     saved: state.saved,
     freeBuilds: state.freeBuilds,
+    freeLimitHits: state.freeLimitHits,
     noHintStreak: state.noHintStreak,
     sound: state.sound,
   };
@@ -149,6 +154,7 @@ export const useSnap = create<State>((set, get) => ({
   fresh: [],
   gateOpen: false,
   gateNext: null,
+  offer: null,
 
   hydrate: () => {
     let data = blank();
@@ -159,6 +165,7 @@ export const useSnap = create<State>((set, get) => ({
         data = {
           ...blank(),
           ...parsed,
+          freeLimitHits: parsed.freeLimitHits ?? 0,
           saved: (parsed.saved ?? []).map((build) => ({
             ...build,
             pieces: build.pieces.map((piece) => normalizePiece(piece)),
@@ -332,7 +339,15 @@ export const useSnap = create<State>((set, get) => ({
       playTone("no");
       return;
     }
-    set({ placed: [...state.placed, next], selected: null, notice: null });
+    const placed = [...state.placed, next];
+    let freeLimitHits = state.freeLimitHits;
+    let offer = state.offer;
+    if (state.tier === "free" && pieceLimit(state.tier) === 10 && state.placed.length === 9) {
+      freeLimitHits += 1;
+      if (freeLimitHits % 5 === 0) offer = "build";
+    }
+    set({ placed, selected: null, notice: null, freeLimitHits, offer });
+    if (freeLimitHits !== state.freeLimitHits) persist({ ...pick(get()), freeLimitHits });
     playTone("place");
   },
 
@@ -364,7 +379,8 @@ export const useSnap = create<State>((set, get) => ({
       let badges = mergeBadges(state.badges, earnedPuzzleBadges(completed));
       if (noHintStreak >= 3) badges = mergeBadges(badges, ["turtle"]);
       const fresh = newcomers(state.badges, badges);
-      set({ placed, held: null, completed, noHintStreak, badges, fresh, view: "celebrate", notice: null });
+      const offer = puzzle.id === 10 && !state.completed.includes(10) && state.tier === "free" ? "puzzles" : state.offer;
+      set({ placed, held: null, completed, noHintStreak, badges, fresh, view: "celebrate", notice: null, offer });
       persist({ ...pick(get()), completed, noHintStreak, badges });
       playTone("win");
       return;
@@ -422,6 +438,8 @@ export const useSnap = create<State>((set, get) => ({
   },
 
   dismissFresh: () => set((state) => ({ fresh: state.fresh.slice(1) })),
+
+  dismissOffer: () => set({ offer: null }),
 
   saveBuild: () => {
     const state = get();

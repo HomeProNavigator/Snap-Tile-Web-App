@@ -776,6 +776,32 @@
   font-size: 2rem;
 }
 
+.snap-offer-plans {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(100%, 360px);
+  margin: 8px 0 12px;
+}
+
+.snap-offer-plans p {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #fff;
+  text-align: left;
+}
+
+.snap-offer-plans strong,
+.snap-offer-plans span {
+  display: block;
+}
+
+.snap-offer-plans span {
+  color: var(--color-muted, #6b628a);
+  font-size: 0.92rem;
+}
+
 .snap-pop-art {
   width: min(68vw, 280px);
   aspect-ratio: 1;

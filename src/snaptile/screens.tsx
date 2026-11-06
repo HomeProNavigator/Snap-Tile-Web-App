@@ -708,6 +708,41 @@ function Paywall() {
   );
 }
 
+function UpgradeOffer() {
+  const offer = useSnap((s) => s.offer);
+  const dismissOffer = useSnap((s) => s.dismissOffer);
+  const openGuarded = useSnap((s) => s.openGuarded);
+  if (!offer) return null;
+  return (
+    <div className="snap-pop" role="dialog" aria-label="Want more puzzles and free build pieces?">
+      <p className="snap-kicker">More to build</p>
+      <h1>Want more puzzles and free build pieces?</h1>
+      <div className="snap-offer-plans">
+        {PLANS.filter((plan) => plan.id !== "free").map((plan) => (
+          <p key={plan.id}>
+            <strong>
+              {plan.title} · {plan.price}
+            </strong>
+            <span>{plan.detail}</span>
+          </p>
+        ))}
+      </div>
+      <button
+        className="snap-primary"
+        onClick={() => {
+          dismissOffer();
+          openGuarded("paywall");
+        }}
+      >
+        See plans
+      </button>
+      <button className="snap-text" onClick={dismissOffer}>
+        Not now
+      </button>
+    </div>
+  );
+}
+
 function Account() {
   const go = useSnap((s) => s.go);
   const name = useSnap((s) => s.name);
@@ -773,6 +808,8 @@ export function SnapApp() {
   const ready = useSnap((s) => s.ready);
   const view = useSnap((s) => s.view);
   const gateOpen = useSnap((s) => s.gateOpen);
+  const offer = useSnap((s) => s.offer);
+  const fresh = useSnap((s) => s.fresh);
   const closeGate = useSnap((s) => s.closeGate);
   const passGate = useSnap((s) => s.passGate);
   useEffect(() => {
@@ -793,6 +830,7 @@ export function SnapApp() {
       {view === "badges" ? <BadgesScreen /> : null}
       {view === "account" ? <Account /> : null}
       {view === "paywall" ? <Paywall /> : null}
+      {offer && fresh.length === 0 ? <UpgradeOffer /> : null}
       {gateOpen ? <Gate onClose={closeGate} onPass={passGate} /> : null}
     </main>
   );
