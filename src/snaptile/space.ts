@@ -89,7 +89,15 @@ function hasFloor(placed: Piece[], x: number, y: number, z: number) {
   return placed.some((piece) => piece.plane === "floor" && piece.x === x && piece.y === y && piece.z === z);
 }
 
-/** Open edges of the floor plan, including the tiles that stick out, come before stacked walls in the middle. */
+function hasColumn(placed: Piece[], x: number, y: number, z: number) {
+  return placed.some((piece) => piece.plane === "floor" && piece.x === x && piece.z === z && piece.y <= y);
+}
+
+function capped(placed: Piece[], x: number, y: number, z: number) {
+  return hasFloor(placed, x, y + 1, z) && hasColumn(placed, x, y, z);
+}
+
+/** Lids first when laying flats. A roof is kept as a whole pair, never one slope. */
 export function pickPads(open: Piece[], placed: Piece[], facing: Facing): Piece[] {
   if (open.length === 0) return [];
   if (placed.length === 0) return open.slice(0, 1);
@@ -97,7 +105,14 @@ export function pickPads(open: Piece[], placed: Piece[], facing: Facing): Piece[
   const cy = placed.reduce((sum, piece) => sum + piece.y, 0) / placed.length;
   const cz = placed.reduce((sum, piece) => sum + piece.z, 0) / placed.length;
   const dist = (piece: Piece) => (piece.x - cx) ** 2 + (piece.y - cy) ** 2 + (piece.z - cz) ** 2;
-  if (facing !== "wall") return [...open].sort((a, b) => dist(a) - dist(b)).slice(0, 4);
+  if (facing === "flat") {
+    const lids = open.filter((piece) => piece.plane === "floor" && piece.y > 0).sort((a, b) => b.y - a.y || dist(a) - dist(b));
+    const spread = open.filter((piece) => piece.plane === "floor" && piece.y === 0).sort((a, b) => dist(a) - dist(b)).slice(0, 4);
+    return [...lids, ...spread];
+  }
+  if (facing === "roof") {
+    return open.filter((piece) => piece.plane === "roofx" || piece.plane === "roofz");
+  }
   const exposed = (piece: Piece) => {
     if (piece.plane === "wallx") {
       const east = hasFloor(placed, piece.x, piece.y, piece.z) && !hasFloor(placed, piece.x + 1, piece.y, piece.z);
@@ -122,7 +137,7 @@ export function sockets(placed: Piece[], shape: Shape, color: TileColor, cutout:
   const hole = shape === "square" ? cutout : "none";
   const base = { shape, color, cutout: hole, rot: 0 as const };
   const cap = (x: number, y: number, z: number) => {
-    if (!hasFloor(placed, x, y, z)) return;
+    if (!hasColumn(placed, x, y, z)) return;
     add(out, { ...base, shape: "square", cutout: "none", plane: "floor", lean: 1, x, y: y + 1, z }, used);
   };
   for (const tile of placed) {
@@ -142,10 +157,10 @@ export function sockets(placed: Piece[], shape: Shape, color: TileColor, cutout:
         add(out, { ...base, plane: "wallx", lean: 1, x: tile.x, y: tile.y, z: tile.z - 1 }, used);
         cap(tile.x, tile.y, tile.z);
         cap(tile.x + 1, tile.y, tile.z);
-        if (hasFloor(placed, tile.x, tile.y, tile.z) && hasFloor(placed, tile.x, tile.y + 1, tile.z)) {
+        if (capped(placed, tile.x, tile.y, tile.z)) {
           add(out, { ...base, plane: "roofz", lean: -1, x: tile.x, y: tile.y, z: tile.z }, used);
         }
-        if (hasFloor(placed, tile.x + 1, tile.y, tile.z) && hasFloor(placed, tile.x + 1, tile.y + 1, tile.z)) {
+        if (capped(placed, tile.x + 1, tile.y, tile.z)) {
           add(out, { ...base, plane: "roofz", lean: 1, x: tile.x, y: tile.y, z: tile.z }, used);
         }
       } else {
@@ -153,10 +168,10 @@ export function sockets(placed: Piece[], shape: Shape, color: TileColor, cutout:
         add(out, { ...base, plane: "wallz", lean: 1, x: tile.x - 1, y: tile.y, z: tile.z }, used);
         cap(tile.x, tile.y, tile.z);
         cap(tile.x, tile.y, tile.z + 1);
-        if (hasFloor(placed, tile.x, tile.y, tile.z) && hasFloor(placed, tile.x, tile.y + 1, tile.z)) {
+        if (capped(placed, tile.x, tile.y, tile.z)) {
           add(out, { ...base, plane: "roofx", lean: -1, x: tile.x, y: tile.y, z: tile.z }, used);
         }
-        if (hasFloor(placed, tile.x, tile.y, tile.z + 1) && hasFloor(placed, tile.x, tile.y + 1, tile.z + 1)) {
+        if (capped(placed, tile.x, tile.y, tile.z + 1)) {
           add(out, { ...base, plane: "roofx", lean: 1, x: tile.x, y: tile.y, z: tile.z }, used);
         }
       }
@@ -168,7 +183,7 @@ export function sockets(placed: Piece[], shape: Shape, color: TileColor, cutout:
         const z = tile.z + sign * stepZ;
         const cellX = tile.plane === "roofz" && tile.lean === 1 ? x + 1 : x;
         const cellZ = tile.plane === "roofx" && tile.lean === 1 ? z + 1 : z;
-        if (hasFloor(placed, cellX, tile.y, cellZ) && hasFloor(placed, cellX, tile.y + 1, cellZ)) {
+        if (capped(placed, cellX, tile.y, cellZ)) {
           add(out, { ...base, plane: tile.plane, lean: tile.lean, x, y: tile.y, z }, used);
         }
       }

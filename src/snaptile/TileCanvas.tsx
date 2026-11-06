@@ -298,7 +298,7 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
         : sockets(placed, trayShape, trayColor, cutout);
     const open = raw
       .filter((piece) => {
-        if (trayFacing === "roof") return piece.plane !== "floor" ? facingOf(piece.plane) === "roof" : piece.y > 0;
+        if (trayFacing === "roof") return facingOf(piece.plane) === "roof";
         return facingOf(piece.plane) === trayFacing;
       })
       .map((piece) => {
