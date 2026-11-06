@@ -93,50 +93,6 @@ function TileGlyph({ kind, size = 36 }: { kind: "square" | "triangle" | "right" 
   );
 }
 
-function Gate({ onClose, onPass }: { onClose: () => void; onPass: () => void }) {
-  const problem = useMemo(() => {
-    const a = 6 + Math.floor(Math.random() * 4);
-    const b = 6 + Math.floor(Math.random() * 4);
-    return { a, b, answer: String(a * b) };
-  }, []);
-  const [value, setValue] = useState("");
-  const [wrong, setWrong] = useState(false);
-  return (
-    <div className="snap-modal" role="dialog" aria-modal="true" aria-labelledby="gate-title">
-      <form
-        className="snap-sheet"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (value.trim() === problem.answer) onPass();
-          else setWrong(true);
-        }}
-      >
-        <h2 id="gate-title">Grown-ups only</h2>
-        <p>What is {problem.a} × {problem.b}?</p>
-        <input
-          inputMode="numeric"
-          autoComplete="off"
-          aria-label="Answer"
-          value={value}
-          onChange={(event) => {
-            setValue(event.target.value);
-            setWrong(false);
-          }}
-        />
-        {wrong ? <p className="snap-warn">That answer is not right yet.</p> : null}
-        <div className="snap-row">
-          <button type="button" className="snap-secondary" onClick={onClose}>
-            Back
-          </button>
-          <button type="submit" className="snap-primary">
-            Continue
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
 function Onboarding() {
   const [step, setStep] = useState(0);
   const name = useSnap((s) => s.name);
@@ -148,7 +104,7 @@ function Onboarding() {
       title: "Up, down, and across",
       body: "Pick one tile. Choose flat, wall, or roof, then tap a single outline. One tap adds one piece.",
     },
-    { title: "A grown-up helps", body: "Plans, privacy, and the account stay behind a grown-up question. Nothing here is shared." },
+    { title: "More tiles, more puzzles", body: "The first 10 puzzles and 10 tiles are free. Plans unlock the rest. Nothing here is shared." },
   ];
   if (step < 3) {
     const page = pages[step]!;
@@ -186,7 +142,6 @@ function Home() {
   const go = useSnap((s) => s.go);
   const startFree = useSnap((s) => s.startFree);
   const startPuzzle = useSnap((s) => s.startPuzzle);
-  const openGuarded = useSnap((s) => s.openGuarded);
   const completed = useSnap((s) => s.completed);
   const tier = useSnap((s) => s.tier);
   const sound = useSnap((s) => s.sound);
@@ -247,12 +202,12 @@ function Home() {
           <strong>Badges</strong>
           <em>Animals you earn</em>
         </button>
-        <button className="snap-choice" data-tone="mint" onClick={() => openGuarded("account")}>
+        <button className="snap-choice" data-tone="mint" onClick={() => go("account")}>
           <span className="snap-choice-icon">
             <UserRound />
           </span>
           <strong>Account</strong>
-          <em>For grown-ups</em>
+          <em>Name and plans</em>
         </button>
       </div>
     </section>
@@ -689,7 +644,7 @@ function Paywall() {
         </button>
         <div>
           <h1>Plans</h1>
-          <p>{isNativeApp() ? "Ask a grown-up. Apple handles the payment." : "This device only. Not a real charge."}</p>
+          <p>{isNativeApp() ? "Apple handles the payment." : "This device only. Not a real charge."}</p>
         </div>
       </header>
       {PLANS.map((plan) => (
@@ -711,7 +666,7 @@ function Paywall() {
 function UpgradeOffer() {
   const offer = useSnap((s) => s.offer);
   const dismissOffer = useSnap((s) => s.dismissOffer);
-  const openGuarded = useSnap((s) => s.openGuarded);
+  const go = useSnap((s) => s.go);
   if (!offer) return null;
   return (
     <div className="snap-pop" role="dialog" aria-label="Want more puzzles and free build pieces?">
@@ -731,7 +686,7 @@ function UpgradeOffer() {
         className="snap-primary"
         onClick={() => {
           dismissOffer();
-          openGuarded("paywall");
+          go("paywall");
         }}
       >
         See plans
@@ -754,7 +709,6 @@ function Account() {
   const loadBuild = useSnap((s) => s.loadBuild);
   const signOut = useSnap((s) => s.signOut);
   const resetDevice = useSnap((s) => s.resetDevice);
-  const openGuarded = useSnap((s) => s.openGuarded);
   const notice = useSnap((s) => s.notice);
   return (
     <section className="snap-screen">
@@ -775,7 +729,7 @@ function Account() {
         Name
         <input aria-label="First name" maxLength={16} value={name} onChange={(event) => setName(event.target.value)} />
       </label>
-      <button className="snap-plan" onClick={() => openGuarded("paywall")}>
+      <button className="snap-plan" onClick={() => go("paywall")}>
         <strong>Plans</strong>
         <span>
           {tierName(tier)} · {pieceLimitLabel(tier)} tiles
@@ -807,11 +761,8 @@ export function SnapApp() {
   const applyNativeTier = useSnap((s) => s.applyNativeTier);
   const ready = useSnap((s) => s.ready);
   const view = useSnap((s) => s.view);
-  const gateOpen = useSnap((s) => s.gateOpen);
   const offer = useSnap((s) => s.offer);
   const fresh = useSnap((s) => s.fresh);
-  const closeGate = useSnap((s) => s.closeGate);
-  const passGate = useSnap((s) => s.passGate);
   useEffect(() => {
     hydrate();
     void currentNative().then((tier) => {
@@ -831,7 +782,6 @@ export function SnapApp() {
       {view === "account" ? <Account /> : null}
       {view === "paywall" ? <Paywall /> : null}
       {offer && fresh.length === 0 ? <UpgradeOffer /> : null}
-      {gateOpen ? <Gate onClose={closeGate} onPass={passGate} /> : null}
     </main>
   );
 }

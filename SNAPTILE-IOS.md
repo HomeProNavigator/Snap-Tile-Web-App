@@ -2,7 +2,7 @@
 
 This is the complete iOS version of the web game. It is the same app, not a rewrite.
 
-The screens, 3D tiles, puzzles, colors, parent gate, badges, and saves stay in the React code that already runs in the browser. Capacitor puts that exact build inside an iPhone app. The only new code is the native shell and Apple payments. A Swift rebuild of the builder would drift away from the web version, so this plan does not do that.
+The screens, 3D tiles, puzzles, colors, badges, and saves stay in the React code that already runs in the browser. Capacitor puts that exact build inside an iPhone app. The only new code is the native shell and Apple payments. A Swift rebuild of the builder would drift away from the web version, so this plan does not do that.
 
 This file is the source you take to a Mac. An iPhone app cannot be compiled on the machine that built the website. You need Xcode, and an Apple Developer account ($99 a year) before TestFlight or the App Store.
 
@@ -17,7 +17,7 @@ This file is the source you take to a Mac. An iPhone app cannot be compiled on t
 | Builder $7.99/month: 50 tiles, puzzles 1–50 | Same caps, charged by Apple every month |
 | Master Builder $10.99/month: 80 tiles, all 100 puzzles | Same caps, charged by Apple every month |
 | Unlimited Yearly $49.99: 80 tiles and all 100 puzzles for a year | Auto-renewing subscription |
-| Parent math gate before Account and Plans | Same gate, still in the web UI |
+| Account and Plans open directly | Same screens. No math question. |
 | Saves in `snaptile-v1` on the device | Same key, kept in the app sandbox |
 | No ads, no chat, no account server | Still none. Do not add any |
 
@@ -207,9 +207,9 @@ On launch, after `hydrate()`, if `isNativeApp()` then call `currentNative()` and
 
 ### Plans screen
 
-Delete the subtitle `This device only. Not a real charge.` from `Paywall` when `isNativeApp()` is true. Replace it with `Ask a grown-up. Apple handles the payment.`
+Delete the subtitle `This device only. Not a real charge.` from `Paywall` when `isNativeApp()` is true. Replace it with `Apple handles the payment.`
 
-The parent gate already wraps the Plans button (`openGuarded("paywall")`). Do not add a second gate, and do not let a purchase start from anywhere else.
+Plans and Account open directly. There is no parental math question. Do not turn on Made for Kids.
 
 ---
 
@@ -561,23 +561,22 @@ Then run again from Xcode. `cap sync` copies `dist` into the app. Do not edit fi
 
 ## 10. App Store Connect
 
-Create the app as **SnapTile**, primary category **Games**, secondary **Education**. Then turn on **Made for Kids** and set the age band to **5 and under** or **6–8**, matching ages 4–10. Kids Category is not optional for this game.
+Create the app as **SnapTile**, primary category **Games**, secondary **Education**. Do **not** turn on Made for Kids. Rate it 4+, and do not describe it as an app for children in the store text.
 
 Answer the questionnaire like this:
 
 - Age rating 4+. No violence, no contests, no unrestricted web.
 - Contains no ads.
-- Uses no third-party analytics and no tracking.
 - Data collection: Data Not Collected.
 - Privacy policy URL: a page that says the first name and the builds stay on the device, and that Apple processes payments.
 - In-app purchases: the three products above. Paid apps and outside card forms are not allowed for these unlocks.
-- Review notes: "Parent gate is a multiplication question before Plans and Account. There is no account login. Purchases use StoreKit. The game is playable offline after install."
+- Review notes: "There is no account login. Purchases use StoreKit. The game is playable offline after install. This app is not in the Kids category."
 - Sign-in information: leave blank. There is no login.
 - Export compliance: the app does not use non-exempt encryption. `ITSAppUsesNonExemptEncryption` is false.
 
-Screenshots: iPhone 6.7-inch and 6.1-inch, portrait. Use Home, a puzzle in progress with the reference model, and Free Build. Do not show the parent gate answer.
+Screenshots: iPhone 6.7-inch and 6.1-inch, portrait. Use Home, a puzzle in progress with the reference model, and Free Build.
 
-A rejected kids build is usually one of these: a link that leaves the app, a purchase that skips the parent gate, the words "not a real charge", or an analytics script that shipped inside `dist`.
+A rejected build is usually one of these: a link that leaves the app, a purchase that skips StoreKit, the words "not a real charge", or store text that says the app is for kids while Made for Kids is off.
 
 ---
 

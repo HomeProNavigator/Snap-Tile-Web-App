@@ -51,16 +51,11 @@ type State = Persisted & {
   hintSpot: string | null;
   notice: string | null;
   fresh: string[];
-  gateOpen: boolean;
-  gateNext: "account" | "paywall" | null;
   offer: "puzzles" | "build" | null;
   hydrate: () => void;
   setName: (name: string) => void;
   finishOnboarding: () => void;
   go: (view: View) => void;
-  openGuarded: (next: "account" | "paywall") => void;
-  closeGate: () => void;
-  passGate: () => void;
   setSound: (on: boolean) => void;
   choosePlan: (tier: Tier) => void;
   restorePlan: () => void;
@@ -152,8 +147,6 @@ export const useSnap = create<State>((set, get) => ({
   hintSpot: null,
   notice: null,
   fresh: [],
-  gateOpen: false,
-  gateNext: null,
   offer: null,
 
   hydrate: () => {
@@ -191,16 +184,7 @@ export const useSnap = create<State>((set, get) => ({
     playTone("tap");
   },
 
-  go: (view) => set({ view, notice: null, gateOpen: false }),
-
-  openGuarded: (next) => set({ gateOpen: true, gateNext: next, notice: null }),
-
-  closeGate: () => set({ gateOpen: false, gateNext: null }),
-
-  passGate: () => {
-    const next = get().gateNext;
-    set({ gateOpen: false, gateNext: null, view: next === "paywall" ? "paywall" : "account" });
-  },
+  go: (view) => set({ view, notice: null }),
 
   setSound: (on) => {
     set({ sound: on });
@@ -279,7 +263,7 @@ export const useSnap = create<State>((set, get) => ({
   startPuzzle: (id) => {
     const { tier, completed } = get();
     if (!TEST_UNLOCK && id > puzzleCap(tier)) {
-      get().openGuarded("paywall");
+      get().go("paywall");
       return;
     }
     if (!TEST_UNLOCK && id > 1 && !completed.includes(id - 1) && !completed.includes(id)) {
@@ -444,7 +428,7 @@ export const useSnap = create<State>((set, get) => ({
   saveBuild: () => {
     const state = get();
     if (!TEST_UNLOCK && state.tier === "free") {
-      get().openGuarded("paywall");
+      get().go("paywall");
       return;
     }
     if (state.placed.length < 1) return;
