@@ -299,6 +299,7 @@ export const useSnap = create<State>((set, get) => ({
       selected: null,
       held: null,
       trayFacing: "flat",
+      trayShape: "square",
       hintUsed: false,
       hintSpot: null,
       notice: null,
@@ -306,7 +307,7 @@ export const useSnap = create<State>((set, get) => ({
 
   placeSocket: (piece) => {
     const state = get();
-    if (state.puzzleId) return;
+    if (state.puzzleId || state.trayShape === "right") return;
     const lid = piece.plane === "floor" && piece.y > 0;
     const shape = lid ? "square" : state.trayShape;
     const next = normalizePiece({

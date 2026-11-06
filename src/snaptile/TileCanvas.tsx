@@ -360,17 +360,18 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
 
   const pads = useMemo(() => {
     if (puzzle || quiet) return [];
-    const cutout = trayShape === "square" ? trayCutout : "none";
+    const shape = trayShape === "right" ? "square" : trayShape;
+    const cutout = shape === "square" ? trayCutout : "none";
     const raw =
       placed.length === 0
         ? trayFacing === "roof"
           ? []
           : [
               trayFacing === "wall"
-                ? { shape: trayShape, color: trayColor, cutout, rot: 0 as const, plane: "wallz" as const, lean: 1 as const, x: 2, y: 0, z: 2 }
-                : { shape: trayShape, color: trayColor, cutout: "none" as const, rot: 0 as const, plane: "floor" as const, lean: 1 as const, x: 2, y: 0, z: 2 },
+                ? { shape, color: trayColor, cutout, rot: 0 as const, plane: "wallz" as const, lean: 1 as const, x: 2, y: 0, z: 2 }
+                : { shape, color: trayColor, cutout: "none" as const, rot: 0 as const, plane: "floor" as const, lean: 1 as const, x: 2, y: 0, z: 2 },
             ]
-        : sockets(placed, trayShape, trayColor, cutout);
+        : sockets(placed, shape, trayColor, cutout);
     const open = raw
       .filter((piece) => {
         if (trayFacing === "roof") return facingOf(piece.plane) === "roof";
