@@ -263,10 +263,14 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
   const ghosts = useMemo(() => {
     if (!puzzle || quiet) return [];
     const count = guidanceCount(puzzle.pieces.length, puzzle.id);
-    const keys = new Set(puzzle.pieces.slice(0, count).map(pieceKey));
-    if (hintSpot) keys.add(hintSpot);
-    return puzzle.pieces.filter((target) => keys.has(pieceKey(target)) && !placed.some((have) => samePiece(have, target)));
-  }, [puzzle, placed, quiet, hintSpot]);
+    const guided = new Set(puzzle.pieces.slice(0, count).map(pieceKey));
+    if (hintSpot) guided.add(hintSpot);
+    return puzzle.pieces.filter((target) => {
+      if (placed.some((have) => samePiece(have, target))) return false;
+      if (guided.has(pieceKey(target))) return true;
+      return Boolean(held && sameKind(held, target));
+    });
+  }, [puzzle, placed, quiet, hintSpot, held]);
 
   const pads = useMemo(() => {
     if (puzzle || quiet) return [];
