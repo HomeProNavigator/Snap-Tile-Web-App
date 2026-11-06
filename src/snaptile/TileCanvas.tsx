@@ -3,7 +3,7 @@ import { useLayoutEffect, useMemo } from "react";
 import * as THREE from "three";
 import { orbitLock } from "./orbit";
 import { guidanceCount, PUZZLES } from "./puzzles";
-import { meshLift, roofAlpha, roofHingeY, sockets, TILE, visualCenter, facingOf } from "./space";
+import { meshLift, roofAlpha, roofHingeY, sockets, TILE, visualCenter, facingOf, pickPads } from "./space";
 import { useSnap } from "./store";
 import { pieceKey, sameKind, samePiece, TILE_HEX, type Cutout, type Piece } from "./tiles";
 
@@ -305,13 +305,7 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
         const lid = piece.plane === "floor" && piece.y > 0;
         return { ...piece, shape: lid ? "square" as const : piece.shape, cutout: lid ? "none" as const : cutout, rot: trayFacing === "roof" && !lid ? 0 as const : trayRot };
       });
-    const anchor = placed.length ? placed : open;
-    const cx = anchor.reduce((sum, piece) => sum + piece.x, 0) / Math.max(1, anchor.length);
-    const cy = anchor.reduce((sum, piece) => sum + piece.y, 0) / Math.max(1, anchor.length);
-    const cz = anchor.reduce((sum, piece) => sum + piece.z, 0) / Math.max(1, anchor.length);
-    return [...open]
-      .sort((a, b) => (a.x - cx) ** 2 + (a.y - cy) ** 2 + (a.z - cz) ** 2 - ((b.x - cx) ** 2 + (b.y - cy) ** 2 + (b.z - cz) ** 2))
-      .slice(0, placed.length === 0 ? 1 : 4);
+    return pickPads(open, placed, trayFacing);
   }, [puzzle, placed, trayShape, trayColor, trayCutout, trayFacing, trayRot, quiet]);
 
   const family = puzzle ? puzzle.pieces : placed;

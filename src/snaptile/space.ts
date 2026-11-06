@@ -89,6 +89,33 @@ function hasFloor(placed: Piece[], x: number, y: number, z: number) {
   return placed.some((piece) => piece.plane === "floor" && piece.x === x && piece.y === y && piece.z === z);
 }
 
+/** Open edges of the floor plan, including the tiles that stick out, come before stacked walls in the middle. */
+export function pickPads(open: Piece[], placed: Piece[], facing: Facing): Piece[] {
+  if (open.length === 0) return [];
+  if (placed.length === 0) return open.slice(0, 1);
+  const cx = placed.reduce((sum, piece) => sum + piece.x, 0) / placed.length;
+  const cy = placed.reduce((sum, piece) => sum + piece.y, 0) / placed.length;
+  const cz = placed.reduce((sum, piece) => sum + piece.z, 0) / placed.length;
+  const dist = (piece: Piece) => (piece.x - cx) ** 2 + (piece.y - cy) ** 2 + (piece.z - cz) ** 2;
+  if (facing !== "wall") return [...open].sort((a, b) => dist(a) - dist(b)).slice(0, 4);
+  const exposed = (piece: Piece) => {
+    if (piece.plane === "wallx") {
+      const east = hasFloor(placed, piece.x, piece.y, piece.z) && !hasFloor(placed, piece.x + 1, piece.y, piece.z);
+      const west = hasFloor(placed, piece.x + 1, piece.y, piece.z) && !hasFloor(placed, piece.x, piece.y, piece.z);
+      return east || west;
+    }
+    if (piece.plane === "wallz") {
+      const north = hasFloor(placed, piece.x, piece.y, piece.z) && !hasFloor(placed, piece.x, piece.y, piece.z + 1);
+      const south = hasFloor(placed, piece.x, piece.y, piece.z + 1) && !hasFloor(placed, piece.x, piece.y, piece.z);
+      return north || south;
+    }
+    return false;
+  };
+  const ends = open.filter(exposed).sort((a, b) => dist(b) - dist(a));
+  const rest = open.filter((piece) => !exposed(piece)).sort((a, b) => dist(a) - dist(b));
+  return [...ends, ...rest].slice(0, 8);
+}
+
 export function sockets(placed: Piece[], shape: Shape, color: TileColor, cutout: Cutout = "none"): Piece[] {
   const used = new Set(placed.map((piece) => `${piece.plane}|${piece.x}|${piece.y}|${piece.z}|${piece.lean}`));
   const out: Piece[] = [];
