@@ -23,13 +23,21 @@ function makeSquare(cutout: Cutout) {
   shape.lineTo(-s, s);
   shape.closePath();
   if (cutout === "window") {
-    const hole = new THREE.Path();
-    hole.moveTo(-0.16, -0.02);
-    hole.lineTo(-0.16, 0.24);
-    hole.lineTo(0.16, 0.24);
-    hole.lineTo(0.16, -0.02);
-    hole.closePath();
-    shape.holes.push(hole);
+    const panes: [number, number, number, number][] = [
+      [-0.27, -0.27, -0.05, -0.05],
+      [0.05, -0.27, 0.27, -0.05],
+      [-0.27, 0.05, -0.05, 0.27],
+      [0.05, 0.05, 0.27, 0.27],
+    ];
+    for (const [x0, y0, x1, y1] of panes) {
+      const hole = new THREE.Path();
+      hole.moveTo(x0, y0);
+      hole.lineTo(x1, y0);
+      hole.lineTo(x1, y1);
+      hole.lineTo(x0, y1);
+      hole.closePath();
+      shape.holes.push(hole);
+    }
   }
   if (cutout === "door") {
     const hole = new THREE.Path();
@@ -65,6 +73,29 @@ const edges = {
   triangle: new THREE.EdgesGeometry(geos.triangle, 20),
 };
 
+function WindowTrim({ ghost }: { ghost?: boolean }) {
+  const bars: [number, number, number, number][] = [
+    [0, 0.32, 0.72, 0.08],
+    [0, -0.32, 0.72, 0.08],
+    [0.32, 0, 0.08, 0.64],
+    [-0.32, 0, 0.08, 0.64],
+    [0, 0, 0.08, 0.64],
+    [0, 0, 0.64, 0.08],
+  ];
+  return (
+    <group>
+      {[-1, 1].map((side) =>
+        bars.map(([x, y, w, h], index) => (
+          <mesh key={`${side}-${index}`} position={[x, y, side * 0.06]} raycast={() => null}>
+            <boxGeometry args={[w, h, 0.025]} />
+            <meshStandardMaterial color="#fffefb" roughness={0.4} transparent opacity={ghost ? 0.9 : 1} />
+          </mesh>
+        )),
+      )}
+    </group>
+  );
+}
+
 function rimOf(hex: string) {
   const color = new THREE.Color(hex);
   color.multiplyScalar(0.42);
@@ -92,7 +123,7 @@ function TileMesh({
   const color = ghost && !hidden && (!guide || bright) ? "#ffffff" : placedColor;
   const geo =
     piece.shape === "triangle" ? geos.triangle : piece.cutout === "window" ? geos.window : piece.cutout === "door" ? geos.door : geos.square;
-  const edge = piece.shape === "triangle" ? edges.triangle : piece.cutout === "window" ? edges.window : piece.cutout === "door" ? edges.door : edges.square;
+  const edge = piece.shape === "triangle" ? edges.triangle : piece.cutout === "door" ? edges.door : edges.square;
   const rim = ghost ? "#5c567f" : rimOf(color);
   return (
     <group>
@@ -124,6 +155,7 @@ function TileMesh({
           polygonOffsetUnits={1}
         />
       </mesh>
+      {hidden || piece.cutout !== "window" || piece.shape !== "square" ? null : <WindowTrim ghost={ghost} />}
       {hidden ? null : (
         <lineSegments geometry={edge} raycast={() => null}>
           <lineBasicMaterial color={rim} transparent opacity={0.85} />
