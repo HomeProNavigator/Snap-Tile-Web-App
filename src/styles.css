@@ -7,7 +7,7 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #e7e4fb;
+  --color-bg: #f4efe6;
   --color-surface: #fffbff;
   --color-fg: #2c2644;
   --color-muted: #6e6788;
@@ -52,11 +52,12 @@
   min-height: 100svh;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
-  background-color: #efeaff;
+  background-color: #f4efe6;
   background-image:
-    linear-gradient(rgb(109 99 230 / 7%) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(109 99 230 / 7%) 1px, transparent 1px);
-  background-size: 32px 32px;
+    radial-gradient(ellipse 90% 42% at 0% 0%, #ffe3b0 0%, transparent 58%),
+    radial-gradient(ellipse 70% 36% at 100% 0%, #c9ecff 0%, transparent 52%),
+    radial-gradient(ellipse 80% 40% at 50% 100%, #ffd6ea 0%, transparent 55%);
+  background-attachment: fixed;
   color: var(--color-fg);
 }
 
@@ -279,8 +280,16 @@
   text-align: left;
 }
 
+.snap-home .snap-grid {
+  flex: 0 0 auto;
+  align-content: start;
+}
+
 .snap-home .snap-choice {
-  height: 100%;
+  height: auto;
+  min-height: 150px;
+  border-radius: 26px;
+  box-shadow: 0 10px 0 rgb(44 38 68 / 12%), 0 18px 24px rgb(70 40 20 / 12%);
 }
 
 .snap-choice strong {
@@ -305,22 +314,22 @@
 }
 
 .snap-choice[data-tone="coral"] {
-  background: #ff5c45;
+  background: linear-gradient(180deg, #ff7d68 0%, #ff4f3c 100%);
   color: #fff;
 }
 
 .snap-choice[data-tone="sky"] {
-  background: #3aa0ff;
+  background: linear-gradient(180deg, #59b4ff 0%, #2f93f5 100%);
   color: #fff;
 }
 
 .snap-choice[data-tone="gold"] {
-  background: #ffd15a;
+  background: linear-gradient(180deg, #ffe07a 0%, #ffc53d 100%);
   color: #2c2644;
 }
 
 .snap-choice[data-tone="mint"] {
-  background: #7ddeb3;
+  background: linear-gradient(180deg, #9aebc8 0%, #63d4a4 100%);
   color: #1d3b2e;
 }
 

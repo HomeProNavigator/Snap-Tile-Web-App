@@ -9,10 +9,10 @@ const config: CapacitorConfig = {
   appId: "com.snaptile.play",
   appName: "SnapTile",
   webDir: "dist-ios",
-  backgroundColor: "#efeaff",
+  backgroundColor: "#f4efe6",
   ios: {
     contentInset: "never",
-    backgroundColor: "#efeaff",
+    backgroundColor: "#f4efe6",
     allowsLinkPreview: false,
   },
   server: live
