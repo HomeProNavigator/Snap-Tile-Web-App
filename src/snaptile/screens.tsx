@@ -5,6 +5,7 @@ import { orbitLock } from "./orbit";
 import { PUZZLES, guideLabel } from "./puzzles";
 import { useSnap } from "./store";
 import { currentNative, isNativeApp } from "./native";
+import { TEST_UNLOCK } from "./test-mode";
 import { TILE_COLORS, TILE_HEX, kindKey, pieceLimit, pieceLimitLabel, puzzleCap, tierName, type Piece, type Tier } from "./tiles";
 
 const TileCanvas = lazy(() => import("./TileCanvas").then((mod) => ({ default: mod.TileCanvas })));
@@ -270,8 +271,8 @@ function Puzzles() {
       <div className="snap-puzzle-grid">
         {PUZZLES.map((puzzle) => {
           const done = completed.includes(puzzle.id);
-          const tierLocked = puzzle.id > puzzleCap(tier);
-          const sequenceLocked = puzzle.id > 1 && !completed.includes(puzzle.id - 1) && !completed.includes(puzzle.id);
+          const tierLocked = !TEST_UNLOCK && puzzle.id > puzzleCap(tier);
+          const sequenceLocked = !TEST_UNLOCK && puzzle.id > 1 && !completed.includes(puzzle.id - 1) && !completed.includes(puzzle.id);
           const locked = tierLocked || sequenceLocked;
           const nextOpen = !done && !locked && (puzzle.id === 1 || completed.includes(puzzle.id - 1));
           return (

@@ -5,6 +5,7 @@ import { PUZZLES } from "./puzzles";
 import { normalizePiece, occupancyKey, pieceKey, pieceLimit, puzzleCap, sameKind, samePiece, type Cutout, type Piece, type Shape, type Tier, type TileColor, type TileKind } from "./tiles";
 import type { Facing } from "./space";
 import { isNativeApp, purchaseNative, restoreNative } from "./native";
+import { TEST_UNLOCK } from "./test-mode";
 
 const KEY = "snaptile-v1";
 
@@ -259,11 +260,11 @@ export const useSnap = create<State>((set, get) => ({
 
   startPuzzle: (id) => {
     const { tier, completed } = get();
-    if (id > puzzleCap(tier)) {
+    if (!TEST_UNLOCK && id > puzzleCap(tier)) {
       get().openGuarded("paywall");
       return;
     }
-    if (id > 1 && !completed.includes(id - 1) && !completed.includes(id)) {
+    if (!TEST_UNLOCK && id > 1 && !completed.includes(id - 1) && !completed.includes(id)) {
       set({ notice: "Finish the puzzle just before this one first." });
       return;
     }
@@ -408,7 +409,7 @@ export const useSnap = create<State>((set, get) => ({
 
   saveBuild: () => {
     const state = get();
-    if (state.tier === "free") {
+    if (!TEST_UNLOCK && state.tier === "free") {
       get().openGuarded("paywall");
       return;
     }

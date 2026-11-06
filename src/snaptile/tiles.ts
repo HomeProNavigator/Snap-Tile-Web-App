@@ -1,3 +1,5 @@
+import { TEST_UNLOCK } from "./test-mode";
+
 export type Shape = "square" | "triangle";
 export type Cutout = "none" | "window" | "door";
 export type TileColor = "coral" | "gold" | "mint" | "sky" | "lilac" | "blush";
@@ -42,18 +44,21 @@ export function kindKey(kind: TileKind): string {
 export const PITCH = Math.PI / 3;
 
 export function pieceLimit(tier: Tier): number {
+  if (TEST_UNLOCK) return 100;
   if (tier === "free") return 10;
   if (tier === "builder") return 50;
   return 80;
 }
 
 export function pieceLimitLabel(tier: Tier): string {
+  if (TEST_UNLOCK) return "100";
   if (tier === "free") return "10";
   if (tier === "builder") return "50";
   return "Unlimited";
 }
 
 export function puzzleCap(tier: Tier): number {
+  if (TEST_UNLOCK) return 100;
   if (tier === "free") return 10;
   if (tier === "builder") return 50;
   return 100;

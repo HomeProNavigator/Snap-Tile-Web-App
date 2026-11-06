@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "node scripts/with-app-env.mjs vite dev --host 0.0.0.0 --port 8080",
-    "build:ios": "vite build --config vite.ios.config.ts && node scripts/ios-index.mjs",
+    "build:web": "vite build --config vite.ios.config.ts && node scripts/ios-index.mjs",
+    "build:ios": "npm run build:web",
     "ios:setup": "node scripts/setup-ios.mjs",
     "ios:sync": "npm run build:ios && npx cap sync ios",
     "ios:open": "npx cap open ios",

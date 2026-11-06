@@ -1,4 +1,5 @@
 import { TILE_COLORS, pieceLimit, topY, type Piece, type Tier } from "./tiles";
+import { TEST_UNLOCK } from "./test-mode";
 
 export type Badge = {
   id: string;
@@ -70,6 +71,6 @@ export function buildBadges(pieces: Piece[], tier: Tier): string[] {
 }
 
 export function badgeVisible(badge: Badge, tier: Tier): boolean {
-  if (badge.basic) return true;
+  if (TEST_UNLOCK || badge.basic) return true;
   return tier !== "free";
 }
