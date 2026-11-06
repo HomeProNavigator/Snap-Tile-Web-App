@@ -926,6 +926,95 @@
   height: 32px;
 }
 
+/* iPhone Safari: the big controls push Undo and Finished under the browser bar. */
+@media (max-width: 767px) {
+  .snap-play {
+    min-height: 100svh;
+    max-height: 100svh;
+    padding: 8px 12px 8px;
+  }
+
+  .snap-play .snap-top {
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+
+  .snap-play .snap-top h1 {
+    font-size: 1.15rem;
+  }
+
+  .snap-play .snap-icon,
+  .snap-play .snap-row .snap-secondary {
+    width: 56px;
+    min-width: 56px;
+    height: 56px;
+    min-height: 56px;
+    flex: 0 0 56px;
+  }
+
+  .snap-play .snap-icon svg,
+  .snap-play .snap-row .snap-secondary svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .snap-play .snap-tools {
+    gap: 8px;
+  }
+
+  .snap-play .snap-tray {
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .snap-kinds {
+    gap: 8px;
+  }
+
+  .snap-kinds .snap-chip {
+    min-height: 68px;
+  }
+
+  .snap-kinds .snap-chip svg {
+    width: 34px;
+    height: 34px;
+  }
+
+  .snap-colors {
+    gap: 8px;
+  }
+
+  .snap-swatch {
+    width: 56px;
+    height: 56px;
+    min-height: 56px;
+  }
+
+  .snap-done {
+    min-height: 56px;
+    font-size: 1.05rem;
+    border-radius: 16px;
+  }
+
+  .snap-done svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .snap-stage {
+    min-height: 120px;
+  }
+
+  .snap-pick {
+    min-width: 72px;
+    min-height: 72px;
+  }
+
+  .snap-picks {
+    gap: 8px;
+  }
+}
+
 .snap-delete {
   width: 72px;
   height: 72px;
