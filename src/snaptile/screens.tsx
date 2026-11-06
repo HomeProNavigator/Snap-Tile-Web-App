@@ -320,6 +320,7 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
           </button>
         </div>
       </header>
+      <div className="snap-board">
       <div
         className="snap-stage"
         onPointerDown={(event) => {
@@ -424,6 +425,7 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
           </div>
         </div>
       ) : null}
+      <div className="snap-side">
       {notice ? <p className="snap-note">{notice}</p> : null}
       {mode === "play" && puzzle ? (
         <PuzzleTray puzzlePieces={puzzle.pieces} />
@@ -482,6 +484,8 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
           </div>
         </div>
       )}
+      </div>
+      </div>
     </section>
   );
 }

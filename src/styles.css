@@ -78,6 +78,64 @@
   padding-bottom: 12px;
 }
 
+.snap-board {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.snap-side {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+}
+
+@media (min-width: 768px) {
+  .snap-screen,
+  .snap-play {
+    width: min(100%, 1100px);
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+
+  .snap-home .snap-grid,
+  .snap-badge-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .snap-puzzle-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .snap-home .snap-choice {
+    min-height: 210px;
+  }
+}
+
+@media (min-width: 900px) and (orientation: landscape) {
+  .snap-play {
+    width: min(100%, 1280px);
+  }
+
+  .snap-board {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .snap-side {
+    width: 380px;
+    flex: 0 0 380px;
+    overflow: auto;
+    justify-content: flex-end;
+  }
+
+  .snap-stage {
+    min-height: 0;
+  }
+}
+
 .snap-center {
   min-height: 100dvh;
   display: flex;

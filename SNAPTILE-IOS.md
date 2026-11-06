@@ -207,7 +207,7 @@ On launch, after `hydrate()`, if `isNativeApp()` then call `currentNative()` and
 
 ### Plans screen
 
-The Plans screen shows the App Store price, the renewal terms, Restore, Manage or cancel, and links to the Privacy Policy and the Terms of Use. Those pages are also in `public/legal/` for the public website. Do not turn on Made for Kids. The Xcode target is iPhone only.
+The Plans screen shows the App Store price, the renewal terms, Restore, Manage or cancel, and links to the Privacy Policy and the Terms of Use. Those pages are also in `public/legal/` for the public website. Do not turn on Made for Kids. The Xcode target is iPhone and iPad. iPhone stays portrait. iPad can turn. Take screenshots of both.
 
 ---
 
