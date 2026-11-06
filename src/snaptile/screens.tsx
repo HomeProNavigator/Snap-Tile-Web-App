@@ -307,8 +307,15 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
   const [yaw, setYaw] = useState(0.75);
   const [pitch, setPitch] = useState(0.48);
   const [picture, setPicture] = useState(false);
+  const [goalOpen, setGoalOpen] = useState(false);
+  const [goalZoom, setGoalZoom] = useState(1);
+  const [goalYaw, setGoalYaw] = useState(0.75);
+  const [goalPitch, setGoalPitch] = useState(0.48);
   const [mounted, setMounted] = useState(false);
   const drag = useRef<{ x: number; y: number; yaw: number; pitch: number; active: boolean } | null>(null);
+  const goalDrag = useRef<{ x: number; y: number; yaw: number; pitch: number } | null>(null);
+  const goalPointers = useRef(new Map<number, { x: number; y: number }>());
+  const goalPinch = useRef<{ distance: number; zoom: number } | null>(null);
   const go = useSnap((s) => s.go);
   const placed = useSnap((s) => s.placed);
   const puzzleId = useSnap((s) => s.puzzleId);
@@ -385,15 +392,82 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
             <TileCanvas yaw={yaw} pitch={pitch} quiet={quiet} />
           </Suspense>
         ) : null}
-        {mode === "play" && puzzle && mounted && !picture ? (
-          <div className="snap-goal">
+        {mode === "play" && puzzle && mounted && !picture && !goalOpen ? (
+          <button
+            type="button"
+            className="snap-goal"
+            aria-label="Make the picture bigger"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={() => {
+              setGoalZoom(1);
+              setGoalOpen(true);
+            }}
+          >
             <span>Copy this</span>
             <Suspense fallback={null}>
               <TileCanvas yaw={yaw} pitch={pitch} preview={puzzle.pieces} />
             </Suspense>
-          </div>
+          </button>
         ) : null}
       </div>
+      {goalOpen && puzzle && mounted ? (
+        <div className="snap-goal-big" role="dialog" aria-label="Finished puzzle">
+          <div
+            className="snap-goal-view"
+            onPointerDown={(event) => {
+              goalPointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+              event.currentTarget.setPointerCapture(event.pointerId);
+              if (goalPointers.current.size === 2) {
+                const [a, b] = [...goalPointers.current.values()];
+                goalPinch.current = { distance: Math.hypot(a.x - b.x, a.y - b.y), zoom: goalZoom };
+                goalDrag.current = null;
+              } else {
+                goalDrag.current = { x: event.clientX, y: event.clientY, yaw: goalYaw, pitch: goalPitch };
+              }
+            }}
+            onPointerMove={(event) => {
+              if (!goalPointers.current.has(event.pointerId)) return;
+              goalPointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+              if (goalPointers.current.size >= 2 && goalPinch.current) {
+                const [a, b] = [...goalPointers.current.values()];
+                const distance = Math.hypot(a.x - b.x, a.y - b.y);
+                const next = goalPinch.current.zoom * (distance / Math.max(1, goalPinch.current.distance));
+                setGoalZoom(Math.min(3.2, Math.max(0.7, next)));
+                return;
+              }
+              const start = goalDrag.current;
+              if (!start) return;
+              setGoalYaw(start.yaw - (event.clientX - start.x) * 0.01);
+              setGoalPitch(Math.min(1.15, Math.max(0.22, start.pitch + (event.clientY - start.y) * 0.007)));
+            }}
+            onPointerUp={(event) => {
+              goalPointers.current.delete(event.pointerId);
+              if (goalPointers.current.size < 2) goalPinch.current = null;
+              if (goalPointers.current.size === 0) goalDrag.current = null;
+            }}
+            onPointerCancel={(event) => {
+              goalPointers.current.delete(event.pointerId);
+              goalPinch.current = null;
+              goalDrag.current = null;
+            }}
+          >
+            <Suspense fallback={null}>
+              <TileCanvas yaw={goalYaw} pitch={goalPitch} zoom={goalZoom} preview={puzzle.pieces} />
+            </Suspense>
+          </div>
+          <button type="button" className="snap-goal-x" aria-label="Close the picture" onClick={() => setGoalOpen(false)}>
+            ×
+          </button>
+          <div className="snap-goal-zoom">
+            <button type="button" aria-label="Zoom in" onClick={() => setGoalZoom((value) => Math.min(3.2, value + 0.4))}>
+              +
+            </button>
+            <button type="button" aria-label="Zoom out" onClick={() => setGoalZoom((value) => Math.max(0.7, value - 0.4))}>
+              −
+            </button>
+          </div>
+        </div>
+      ) : null}
       {notice ? <p className="snap-note">{notice}</p> : null}
       {mode === "play" && puzzle ? (
         <PuzzleTray puzzlePieces={puzzle.pieces} />

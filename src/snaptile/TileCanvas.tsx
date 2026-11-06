@@ -340,15 +340,15 @@ function roofReach(shape: Piece["shape"]) {
   return shape === "triangle" ? (TILE * Math.sqrt(3)) / 2 : TILE;
 }
 
-function FitCamera({ yaw, pitch, span }: { yaw: number; pitch: number; span: number }) {
+function FitCamera({ yaw, pitch, span, zoom = 1 }: { yaw: number; pitch: number; span: number; zoom?: number }) {
   const camera = useThree((state) => state.camera);
   useLayoutEffect(() => {
-    const distance = Math.max(8.6, span * 2.15);
+    const distance = Math.max(8.6, span * 2.15) / zoom;
     const horiz = Math.cos(pitch) * distance;
     camera.position.set(Math.sin(yaw) * horiz, Math.sin(pitch) * distance, Math.cos(yaw) * horiz);
     camera.lookAt(0, 0, 0);
     camera.updateProjectionMatrix();
-  }, [camera, yaw, pitch, span]);
+  }, [camera, yaw, pitch, span, zoom]);
   return null;
 }
 
@@ -377,11 +377,11 @@ function bounds(pieces: Piece[], family: Piece[] = pieces) {
   };
 }
 
-function PreviewScene({ pieces, yaw, pitch }: { pieces: Piece[]; yaw: number; pitch: number }) {
+function PreviewScene({ pieces, yaw, pitch, zoom = 1 }: { pieces: Piece[]; yaw: number; pitch: number; zoom?: number }) {
   const box = useMemo(() => bounds(pieces), [pieces]);
   return (
     <>
-      <FitCamera yaw={yaw} pitch={pitch} span={box.span} />
+      <FitCamera yaw={yaw} pitch={pitch} span={box.span} zoom={zoom} />
       {pieces.map((piece, index) => (
         <TileView key={`r-${index}-${pieceKey(piece)}`} piece={piece} ox={box.ox} oy={box.oy} oz={box.oz} seat={roofHingeY(piece, pieces)} />
       ))}
@@ -515,7 +515,7 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
   );
 }
 
-export function TileCanvas({ yaw, pitch, preview, quiet }: { yaw: number; pitch: number; preview?: Piece[]; quiet?: boolean }) {
+export function TileCanvas({ yaw, pitch, preview, quiet, zoom = 1 }: { yaw: number; pitch: number; preview?: Piece[]; quiet?: boolean; zoom?: number }) {
   return (
     <Canvas camera={{ position: [4.2, 3.2, 4.2], fov: 32, near: 0.1, far: 80 }} dpr={[1, 1.6]} gl={{ antialias: true, alpha: true }}>
       <color attach="background" args={["#e7e4fb"]} />
@@ -523,7 +523,7 @@ export function TileCanvas({ yaw, pitch, preview, quiet }: { yaw: number; pitch:
       <hemisphereLight args={["#fff4ea", "#c9d4f5", 0.55]} />
       <directionalLight position={[4, 8, 3]} intensity={1.25} />
       <directionalLight position={[-3, 4, -2]} intensity={0.4} />
-      {preview ? <PreviewScene pieces={preview} yaw={yaw} pitch={pitch} /> : <Scene yaw={yaw} pitch={pitch} quiet={quiet} />}
+      {preview ? <PreviewScene pieces={preview} yaw={yaw} pitch={pitch} zoom={zoom} /> : <Scene yaw={yaw} pitch={pitch} quiet={quiet} />}
     </Canvas>
   );
 }

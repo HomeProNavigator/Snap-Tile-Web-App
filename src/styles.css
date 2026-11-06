@@ -418,12 +418,73 @@
   right: 8px;
   width: 148px;
   height: 148px;
+  padding: 0;
   border-radius: 18px;
   overflow: hidden;
   border: 3px solid #fff;
   box-shadow: 0 10px 24px rgb(70 50 120 / 18%);
-  pointer-events: none;
   background: #e7e4fb;
+  cursor: pointer;
+}
+
+.snap-goal-big {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #e7e4fb;
+}
+
+.snap-goal-view {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+}
+
+.snap-goal-view > div {
+  position: absolute !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+.snap-goal-x {
+  position: absolute;
+  z-index: 2;
+  top: 16px;
+  right: 16px;
+  width: 56px;
+  height: 56px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #ff3b30;
+  color: #fff;
+  font-size: 36px;
+  line-height: 1;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgb(180 30 20 / 28%);
+}
+
+.snap-goal-zoom {
+  position: absolute;
+  z-index: 2;
+  right: 16px;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.snap-goal-zoom button {
+  width: 56px;
+  height: 56px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #fff;
+  color: #2a2150;
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgb(70 50 120 / 18%);
 }
 
 .snap-goal > span {
