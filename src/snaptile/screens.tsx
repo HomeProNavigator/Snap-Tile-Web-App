@@ -671,9 +671,9 @@ function BadgesScreen() {
 
 const PLANS: { id: Tier; title: string; price: string; detail: string }[] = [
   { id: "free", title: "Free", price: "$0", detail: "10 tiles and the first 10 puzzles." },
-  { id: "builder", title: "Builder", price: "$7.99", detail: "50 tiles and 50 puzzles." },
-  { id: "master", title: "Master Builder", price: "$10.99", detail: "Big castles and all 100 puzzles." },
-  { id: "yearly", title: "Unlimited Yearly", price: "$49.99", detail: "The same big set for a year on this device." },
+  { id: "builder", title: "Builder", price: "$7.99/month", detail: "50 tiles and 50 puzzles." },
+  { id: "master", title: "Master Builder", price: "$10.99/month", detail: "80 tiles and all 100 puzzles." },
+  { id: "yearly", title: "Unlimited Yearly", price: "$49.99/year", detail: "80 tiles and all 100 puzzles for a year." },
 ];
 
 function Paywall() {

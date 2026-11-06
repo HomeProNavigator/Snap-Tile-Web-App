@@ -14,9 +14,9 @@ This file is the source you take to a Mac. An iPhone app cannot be compiled on t
 | Squares and triangles, flat / wall / roof, one tap places one tile | Same 3D canvas |
 | 100 puzzles, easy through expert, guide spots fade on harder puzzles | Same puzzle list |
 | Free: 10 tiles, puzzles 1–10 | Same caps |
-| Builder $7.99: 50 tiles, puzzles 1–50 | Same caps, charged by Apple |
-| Master Builder $10.99: 80 tiles, all 100 puzzles | Same caps, charged by Apple |
-| Unlimited Yearly $49.99: same as Master for a year | Auto-renewing subscription |
+| Builder $7.99/month: 50 tiles, puzzles 1–50 | Same caps, charged by Apple every month |
+| Master Builder $10.99/month: 80 tiles, all 100 puzzles | Same caps, charged by Apple every month |
+| Unlimited Yearly $49.99: 80 tiles and all 100 puzzles for a year | Auto-renewing subscription |
 | Parent math gate before Account and Plans | Same gate, still in the web UI |
 | Saves in `snaptile-v1` on the device | Same key, kept in the app sandbox |
 | No ads, no chat, no account server | Still none. Do not add any |
@@ -29,11 +29,11 @@ Create these in App Store Connect and in the StoreKit file below. The ids must m
 
 | Plan | Product id | Type | Price |
 |---|---|---|---|
-| Builder | `com.snaptile.builder` | Non-consumable | $7.99 |
-| Master Builder | `com.snaptile.master` | Non-consumable | $10.99 |
+| Builder | `com.snaptile.builder` | Auto-renewable, 1 month | $7.99 |
+| Master Builder | `com.snaptile.master` | Auto-renewable, 1 month | $10.99 |
 | Unlimited Yearly | `com.snaptile.yearly` | Auto-renewable, 1 year | $49.99 |
 
-Free is not a product. If both a lifetime plan and the yearly plan are owned, the app keeps the higher one. Yearly and Master both unlock 80 tiles and all 100 puzzles. When the year ends and nothing else was bought, the app returns to Free.
+Free is not a product. If more than one plan is active, the app keeps the highest one. Yearly and Master both unlock 80 tiles and all 100 puzzles. When the month or year ends and nothing else is active, the app returns to Free.
 
 Bundle id used below: `com.snaptile.play`. Change it in every file if you register a different one.
 
@@ -465,62 +465,58 @@ Use this in Xcode (Editor, StoreKit, Create Configuration File, then replace the
 {
   "identifier": "SnapTile",
   "nonRenewingSubscriptions": [],
-  "products": [
-    {
-      "displayPrice": "7.99",
-      "familyShareable": false,
-      "internalID": "1",
-      "localizations": [
-        {
-          "description": "50 tiles and 50 puzzles.",
-          "displayName": "Builder",
-          "locale": "en_US"
-        }
-      ],
-      "productID": "com.snaptile.builder",
-      "referenceName": "Builder",
-      "type": "NonConsumable"
-    },
-    {
-      "displayPrice": "10.99",
-      "familyShareable": false,
-      "internalID": "2",
-      "localizations": [
-        {
-          "description": "Big castles and all 100 puzzles.",
-          "displayName": "Master Builder",
-          "locale": "en_US"
-        }
-      ],
-      "productID": "com.snaptile.master",
-      "referenceName": "Master Builder",
-      "type": "NonConsumable"
-    }
-  ],
-  "settings": {
-    "_failTransactionsEnabled": false,
-    "_storeKitErrors": []
-  },
+  "products": [],
+  "settings": { "_failTransactionsEnabled": false, "_storeKitErrors": [] },
   "subscriptionGroups": [
     {
       "id": "3",
       "localizations": [],
-      "name": "SnapTile Unlimited",
+      "name": "SnapTile Plans",
       "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "7.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "1",
+          "introductoryOffer": null,
+          "localizations": [
+            { "description": "50 tiles and 50 puzzles.", "displayName": "Builder", "locale": "en_US" }
+          ],
+          "productID": "com.snaptile.builder",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Builder",
+          "subscriptionGroupID": "3",
+          "type": "RecurringSubscription"
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "10.99",
+          "familyShareable": false,
+          "groupNumber": 2,
+          "internalID": "2",
+          "introductoryOffer": null,
+          "localizations": [
+            { "description": "80 tiles and all 100 puzzles.", "displayName": "Master Builder", "locale": "en_US" }
+          ],
+          "productID": "com.snaptile.master",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Master Builder",
+          "subscriptionGroupID": "3",
+          "type": "RecurringSubscription"
+        },
         {
           "adHocOffers": [],
           "codeOffers": [],
           "displayPrice": "49.99",
           "familyShareable": false,
-          "groupNumber": 1,
+          "groupNumber": 3,
           "internalID": "4",
           "introductoryOffer": null,
           "localizations": [
-            {
-              "description": "The same big set for a year on this device.",
-              "displayName": "Unlimited Yearly",
-              "locale": "en_US"
-            }
+            { "description": "80 tiles and all 100 puzzles for a year.", "displayName": "Unlimited Yearly", "locale": "en_US" }
           ],
           "productID": "com.snaptile.yearly",
           "recurringSubscriptionPeriod": "P1Y",
