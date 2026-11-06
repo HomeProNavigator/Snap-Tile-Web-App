@@ -1,2 +1,2 @@
-/** Family test site: every puzzle is open and free build holds 100 tiles. */
-export const TEST_UNLOCK = true;
+/** True only for the family website. The iPhone app keeps the real plan limits. */
+export const TEST_UNLOCK = import.meta.env.VITE_TEST_UNLOCK === "true";

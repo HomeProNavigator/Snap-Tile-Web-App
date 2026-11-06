@@ -1,8 +1,8 @@
-# SnapTile web test
+# SnapTile
 
-Family test site. Every puzzle is open, and Free Build holds 100 tiles. Plans are not charged.
+Magnetic-tile builder for kids. The website and the iPhone app are the same game.
 
-## Run it
+## Website
 
 ```bash
 npm install
@@ -11,12 +11,22 @@ npm run dev
 
 Open http://localhost:8080
 
-## Netlify
+The family test site on Netlify unlocks every puzzle and a 100-tile free build. That switch is `VITE_TEST_UNLOCK` in `netlify.toml`. The iPhone build does not set it, so the plan limits stay on.
 
-This repo is ready to import. Netlify should use:
+## iPhone and TestFlight, Mac only
 
-- Build command: `npm run build:web`
-- Publish directory: `dist-ios`
-- Node 22
+```bash
+npm install
+npm run ios:setup
+npm run ios:open
+```
 
-Those settings are already in `netlify.toml`.
+In Xcode choose Product, then Archive, then upload to App Store Connect. Leave `CAP_SERVER_URL` unset for that archive. TestFlight installs the uploaded build. It does not run the dev server.
+
+Apple purchases use these product ids:
+
+- `com.snaptile.builder`
+- `com.snaptile.master`
+- `com.snaptile.yearly`
+
+Create them in App Store Connect before a purchase can succeed. The rest of the game runs without them.
