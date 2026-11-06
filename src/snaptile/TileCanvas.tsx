@@ -449,7 +449,8 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
 
   const family = puzzle ? puzzle.pieces : placed;
   const shown = useMemo(() => [...placed, ...ghosts, ...pads], [placed, ghosts, pads]);
-  const box = useMemo(() => bounds(shown, family), [shown, family]);
+  const framed = puzzle ? puzzle.pieces : shown;
+  const box = useMemo(() => bounds(framed, family), [framed, family]);
   const pad = Math.max(4.2, box.span * 0.75);
   const grid = Math.max(6, Math.ceil(pad * 1.5));
 
