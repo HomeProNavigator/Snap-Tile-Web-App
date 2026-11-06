@@ -450,15 +450,17 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
   const family = puzzle ? puzzle.pieces : placed;
   const shown = useMemo(() => [...placed, ...ghosts, ...pads], [placed, ghosts, pads]);
   const box = useMemo(() => bounds(shown, family), [shown, family]);
+  const pad = Math.max(4.2, box.span * 0.75);
+  const grid = Math.max(6, Math.ceil(pad * 1.5));
 
   return (
     <>
       <FitCamera yaw={yaw} pitch={pitch} span={box.span} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[2 - box.ox, -0.06 - box.oy, 2 - box.oz]} raycast={() => null}>
-        <circleGeometry args={[4.2, 40]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.06 - box.oy, 0]} raycast={() => null}>
+        <circleGeometry args={[pad, 48]} />
         <meshStandardMaterial color="#f6f3ff" />
       </mesh>
-      <gridHelper args={[6, 6, "#ddd6f5", "#efeafc"]} position={[2 - box.ox, -0.05 - box.oy, 2 - box.oz]} raycast={() => null} />
+      <gridHelper args={[grid, grid, "#ddd6f5", "#efeafc"]} position={[0, -0.05 - box.oy, 0]} raycast={() => null} />
       {pads.map((piece) => (
         <TileView
           key={`s-${pieceKey(piece)}`}
