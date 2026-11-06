@@ -113,22 +113,22 @@ export function pickPads(open: Piece[], placed: Piece[], facing: Facing): Piece[
   if (facing === "roof") {
     return open.filter((piece) => piece.plane === "roofx" || piece.plane === "roofz");
   }
-  const exposed = (piece: Piece) => {
+  const onFloor = (piece: Piece) => {
     if (piece.plane === "wallx") {
-      const east = hasFloor(placed, piece.x, piece.y, piece.z) && !hasFloor(placed, piece.x + 1, piece.y, piece.z);
-      const west = hasFloor(placed, piece.x + 1, piece.y, piece.z) && !hasFloor(placed, piece.x, piece.y, piece.z);
-      return east || west;
+      return hasFloor(placed, piece.x, piece.y, piece.z) || hasFloor(placed, piece.x + 1, piece.y, piece.z);
     }
     if (piece.plane === "wallz") {
-      const north = hasFloor(placed, piece.x, piece.y, piece.z) && !hasFloor(placed, piece.x, piece.y, piece.z + 1);
-      const south = hasFloor(placed, piece.x, piece.y, piece.z + 1) && !hasFloor(placed, piece.x, piece.y, piece.z);
-      return north || south;
+      return hasFloor(placed, piece.x, piece.y, piece.z) || hasFloor(placed, piece.x, piece.y, piece.z + 1);
     }
     return false;
   };
-  const ends = open.filter(exposed).sort((a, b) => dist(b) - dist(a));
-  const rest = open.filter((piece) => !exposed(piece)).sort((a, b) => dist(a) - dist(b));
-  return [...ends, ...rest].slice(0, 8);
+  const floors = placed.filter((piece) => piece.plane === "floor");
+  const top = floors.reduce((highest, piece) => Math.max(highest, piece.y), 0);
+  const holes = open.filter(onFloor);
+  const rooms = holes.filter((piece) => piece.y < top).sort((a, b) => b.y - a.y || dist(a) - dist(b));
+  const deck = holes.filter((piece) => piece.y >= top).sort((a, b) => dist(a) - dist(b));
+  const above = open.filter((piece) => !onFloor(piece)).sort((a, b) => dist(a) - dist(b)).slice(0, 4);
+  return [...rooms, ...deck, ...above].slice(0, 20);
 }
 
 export function sockets(placed: Piece[], shape: Shape, color: TileColor, cutout: Cutout = "none"): Piece[] {
