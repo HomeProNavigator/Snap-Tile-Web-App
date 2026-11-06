@@ -11,7 +11,7 @@ import { TILE_COLORS, TILE_HEX, kindKey, pieceLimit, pieceLimitLabel, puzzleCap,
 const TileCanvas = lazy(() => import("./TileCanvas").then((mod) => ({ default: mod.TileCanvas })));
 
 function BadgeArt({ id, earned }: { id: string; earned: boolean }) {
-  return <img className={earned ? "snap-badge-art" : "snap-badge-art is-locked"} src={`${import.meta.env.BASE_URL}badges/${id}.jpg`} alt="" />;
+  return <img className={earned ? "snap-badge-art" : "snap-badge-art is-locked"} src={`${import.meta.env.BASE_URL}badges/${id}.jpg?v=2`} alt="" />;
 }
 
 function TileGlyph({ kind, size = 36 }: { kind: "square" | "triangle" | "flat" | "wall" | "roof" | "solid" | "window" | "door"; size?: number }) {
@@ -536,7 +536,7 @@ function BadgePop({ badgeId, name, animal, onDone }: { badgeId: string; name: st
         <span key={i} className="snap-confetti" style={{ left: `${(i * 17) % 100}%`, animationDelay: `${(i % 6) * 0.12}s`, background: ["#ff5a7a", "#ffd15a", "#5ad1ff", "#7d5cff", "#3ddc97", "#ff8a3d"][i % 6] }} />
       ))}
       <p className="snap-kicker">New badge!</p>
-      <img className="snap-pop-art" src={`${import.meta.env.BASE_URL}badges/${badgeId}.jpg`} alt="" />
+      <img className="snap-pop-art" src={`${import.meta.env.BASE_URL}badges/${badgeId}.jpg?v=2`} alt="" />
       <h1>{name}</h1>
       <p>{animal}</p>
       <button className="snap-primary" onClick={onDone}>
