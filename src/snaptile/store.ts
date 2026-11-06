@@ -49,6 +49,7 @@ type State = Persisted & {
   hintUsed: boolean;
   hintSpot: string | null;
   notice: string | null;
+  fresh: string[];
   gateOpen: boolean;
   gateNext: "account" | "paywall" | null;
   hydrate: () => void;
@@ -76,6 +77,7 @@ type State = Persisted & {
   undoLast: () => void;
   useHint: () => void;
   finishFree: () => void;
+  dismissFresh: () => void;
   saveBuild: () => void;
   loadBuild: (id: string) => void;
   clearNotice: () => void;
@@ -124,6 +126,10 @@ function mergeBadges(current: string[], extra: string[]): string[] {
   return [...new Set([...current, ...extra])];
 }
 
+function newcomers(before: string[], after: string[]) {
+  return after.filter((id) => !before.includes(id));
+}
+
 export const useSnap = create<State>((set, get) => ({
   ...blank(),
   ready: false,
@@ -140,6 +146,7 @@ export const useSnap = create<State>((set, get) => ({
   hintUsed: false,
   hintSpot: null,
   notice: null,
+  fresh: [],
   gateOpen: false,
   gateNext: null,
 
@@ -351,7 +358,8 @@ export const useSnap = create<State>((set, get) => ({
       const noHintStreak = state.hintUsed ? 0 : state.noHintStreak + 1;
       let badges = mergeBadges(state.badges, earnedPuzzleBadges(completed));
       if (noHintStreak >= 3) badges = mergeBadges(badges, ["turtle"]);
-      set({ placed, held: null, completed, noHintStreak, badges, view: "celebrate", notice: null });
+      const fresh = newcomers(state.badges, badges);
+      set({ placed, held: null, completed, noHintStreak, badges, fresh, view: "celebrate", notice: null });
       persist({ ...pick(get()), completed, noHintStreak, badges });
       playTone("win");
       return;
@@ -402,10 +410,13 @@ export const useSnap = create<State>((set, get) => ({
     const freeBuilds = state.freeBuilds + 1;
     let badges = mergeBadges(state.badges, buildBadges(state.placed, state.tier));
     if (freeBuilds >= 5) badges = mergeBadges(badges, ["monkey"]);
-    set({ freeBuilds, badges, view: "celebrate", puzzleId: null });
+    const fresh = newcomers(state.badges, badges);
+    set({ freeBuilds, badges, fresh, view: "celebrate", puzzleId: null });
     persist({ ...pick(get()), freeBuilds, badges });
     playTone("win");
   },
+
+  dismissFresh: () => set((state) => ({ fresh: state.fresh.slice(1) })),
 
   saveBuild: () => {
     const state = get();

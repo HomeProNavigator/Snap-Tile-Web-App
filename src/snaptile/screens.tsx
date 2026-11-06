@@ -10,22 +10,8 @@ import { TILE_COLORS, TILE_HEX, kindKey, pieceLimit, pieceLimitLabel, puzzleCap,
 
 const TileCanvas = lazy(() => import("./TileCanvas").then((mod) => ({ default: mod.TileCanvas })));
 
-function AnimalMark({ animal }: { animal: string }) {
-  const ear = animal === "Bunny" || animal === "Cat" || animal === "Kitten" || animal === "Fox";
-  return (
-    <svg viewBox="0 0 64 64" className="snap-animal" aria-hidden="true">
-      {ear ? (
-        <>
-          <path d="M18 30 14 10l14 12z" />
-          <path d="M46 30 50 10 36 22z" />
-        </>
-      ) : null}
-      {animal === "Giraffe" ? <rect x="28" y="6" width="8" height="16" rx="3" /> : null}
-      <circle cx="32" cy="38" r="16" />
-      <circle cx="26" cy="36" r="2" />
-      <circle cx="38" cy="36" r="2" />
-    </svg>
-  );
+function BadgeArt({ id, earned }: { id: string; earned: boolean }) {
+  return <img className={earned ? "snap-badge-art" : "snap-badge-art is-locked"} src={`${import.meta.env.BASE_URL}badges/${id}.jpg`} alt="" />;
 }
 
 function TileGlyph({ kind, size = 36 }: { kind: "square" | "triangle" | "flat" | "wall" | "roof" | "solid" | "window" | "door"; size?: number }) {
@@ -510,10 +496,13 @@ function Celebrate() {
   const puzzleId = useSnap((s) => s.puzzleId);
   const startPuzzle = useSnap((s) => s.startPuzzle);
   const completed = useSnap((s) => s.completed);
+  const fresh = useSnap((s) => s.fresh);
+  const dismissFresh = useSnap((s) => s.dismissFresh);
   const puzzle = PUZZLES.find((p) => p.id === puzzleId);
   const next = puzzle && puzzle.id < 100 ? PUZZLES.find((p) => p.id === puzzle.id + 1) : null;
   const earned = puzzle ? badgeJustFinished(puzzle.id) : undefined;
   const showBadge = earned && completed.includes(puzzle!.id);
+  const popped = fresh[0] ? BADGES.find((badge) => badge.id === fresh[0]) : undefined;
   return (
     <section className="snap-screen snap-center">
       <p className="snap-kicker">Great Build!</p>
@@ -535,7 +524,25 @@ function Celebrate() {
           </button>
         )}
       </div>
+      {popped ? <BadgePop badgeId={popped.id} name={popped.name} animal={popped.animal} onDone={dismissFresh} /> : null}
     </section>
+  );
+}
+
+function BadgePop({ badgeId, name, animal, onDone }: { badgeId: string; name: string; animal: string; onDone: () => void }) {
+  return (
+    <div className="snap-pop" role="dialog" aria-label={`New badge, ${name}`}>
+      {Array.from({ length: 16 }, (_, i) => (
+        <span key={i} className="snap-confetti" style={{ left: `${(i * 17) % 100}%`, animationDelay: `${(i % 6) * 0.12}s`, background: ["#ff5a7a", "#ffd15a", "#5ad1ff", "#7d5cff", "#3ddc97", "#ff8a3d"][i % 6] }} />
+      ))}
+      <p className="snap-kicker">New badge!</p>
+      <img className="snap-pop-art" src={`${import.meta.env.BASE_URL}badges/${badgeId}.jpg`} alt="" />
+      <h1>{name}</h1>
+      <p>{animal}</p>
+      <button className="snap-primary" onClick={onDone}>
+        Yay!
+      </button>
+    </div>
   );
 }
 
@@ -559,7 +566,7 @@ function BadgesScreen() {
           const on = badges.includes(badge.id);
           return (
             <article key={badge.id} className={on ? "snap-badge is-on" : "snap-badge"}>
-              <AnimalMark animal={badge.animal} />
+              <BadgeArt id={badge.id} earned={on} />
               <strong>{badge.name}</strong>
               <span>{on ? badge.detail : "Not yet"}</span>
             </article>
