@@ -95,36 +95,13 @@ function TileGlyph({ kind, size = 36 }: { kind: "square" | "triangle" | "right" 
 }
 
 function Onboarding() {
-  const [step, setStep] = useState(0);
   const name = useSnap((s) => s.name);
   const setName = useSnap((s) => s.setName);
   const finish = useSnap((s) => s.finishOnboarding);
-  const pages = [
-    { title: "Build with tiles", body: "Squares and triangles click together. Build a castle, a boat, or follow a puzzle." },
-    {
-      title: "Up, down, and across",
-      body: "Pick one tile. Choose flat, wall, or roof, then tap a single outline. One tap adds one piece.",
-    },
-    { title: "More tiles, more puzzles", body: "The first 10 puzzles and 10 tiles are free. Plans unlock the rest. Nothing here is shared." },
-  ];
-  if (step < 3) {
-    const page = pages[step]!;
-    return (
-      <section className="snap-screen snap-center">
-        <p className="snap-kicker">Buildlings</p>
-        <p className="snap-tag">Magnetic tiles</p>
-        <h1>{page.title}</h1>
-        <p className="snap-lead">{page.body}</p>
-        <button className="snap-primary snap-wide" onClick={() => setStep(step + 1)}>
-          {step === 2 ? "Almost there" : "Next"}
-        </button>
-      </section>
-    );
-  }
   return (
     <section className="snap-screen snap-center">
-      <h1>What should we call you?</h1>
-      <p className="snap-lead">A first name is enough. It stays on this device.</p>
+      <p className="snap-kicker">Buildlings</p>
+      <p className="snap-tag">Magnetic tiles</p>
       <input
         aria-label="First name"
         maxLength={16}
@@ -133,7 +110,7 @@ function Onboarding() {
         onChange={(event) => setName(event.target.value)}
       />
       <button className="snap-primary snap-wide" onClick={finish}>
-        Start building
+        Start
       </button>
     </section>
   );
