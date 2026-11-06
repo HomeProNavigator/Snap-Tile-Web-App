@@ -5,6 +5,8 @@ type SnapBilling = {
   purchase(options: { id: string }): Promise<{ tier: Tier }>;
   restore(): Promise<{ tier: Tier }>;
   current(): Promise<{ tier: Tier }>;
+  prices(): Promise<Record<string, string>>;
+  manage(): Promise<void>;
 };
 
 const SnapBilling = registerPlugin<SnapBilling>("SnapBilling");
@@ -41,4 +43,26 @@ export async function currentNative(): Promise<Tier | null> {
   } catch {
     return null;
   }
+}
+
+export async function storePrices(): Promise<Partial<Record<Exclude<Tier, "free">, string>>> {
+  if (!isNativeApp()) return {};
+  try {
+    const result = await SnapBilling.prices();
+    return {
+      builder: result?.["com.snaptile.builder"],
+      master: result?.["com.snaptile.master"],
+      yearly: result?.["com.snaptile.yearly"],
+    };
+  } catch {
+    return {};
+  }
+}
+
+export async function manageSubscription(): Promise<void> {
+  if (!isNativeApp()) {
+    window.open("https://apps.apple.com/account/subscriptions", "_blank", "noopener");
+    return;
+  }
+  await SnapBilling.manage();
 }

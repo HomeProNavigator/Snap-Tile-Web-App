@@ -19,7 +19,9 @@ export type View =
   | "celebrate"
   | "badges"
   | "account"
-  | "paywall";
+  | "paywall"
+  | "privacy"
+  | "terms";
 
 type Persisted = {
   onboarded: boolean;
@@ -38,6 +40,7 @@ type Persisted = {
 type State = Persisted & {
   ready: boolean;
   view: View;
+  docBack: View;
   puzzleId: number | null;
   placed: Piece[];
   trayShape: Shape;
@@ -135,6 +138,7 @@ export const useSnap = create<State>((set, get) => ({
   ...blank(),
   ready: false,
   view: "onboarding",
+  docBack: "paywall",
   puzzleId: null,
   placed: [],
   trayShape: "square",

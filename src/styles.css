@@ -861,6 +861,37 @@
   color: var(--color-warn);
 }
 
+.snap-legal-note {
+  margin: 8px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.snap-legal-note p,
+.snap-doc-body p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.snap-doc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.snap-doc-body h2 {
+  margin: 8px 0 0;
+  font-size: 1.05rem;
+}
+
+.snap-doc-body a {
+  color: var(--color-primary);
+  font-weight: 800;
+}
+
 .snap-saved {
   display: flex;
   flex-direction: column;

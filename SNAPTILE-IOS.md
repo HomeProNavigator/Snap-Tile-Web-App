@@ -207,9 +207,7 @@ On launch, after `hydrate()`, if `isNativeApp()` then call `currentNative()` and
 
 ### Plans screen
 
-Delete the subtitle `This device only. Not a real charge.` from `Paywall` when `isNativeApp()` is true. Replace it with `Apple handles the payment.`
-
-Plans and Account open directly. There is no parental math question. Do not turn on Made for Kids.
+The Plans screen shows the App Store price, the renewal terms, Restore, Manage or cancel, and links to the Privacy Policy and the Terms of Use. Those pages are also in `public/legal/` for the public website. Do not turn on Made for Kids. The Xcode target is iPhone only.
 
 ---
 

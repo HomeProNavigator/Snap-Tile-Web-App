@@ -13,6 +13,8 @@ public class SnapBillingPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "purchase", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "restore", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "current", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "prices", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "manage", returnType: CAPPluginReturnPromise),
     ]
 
     public override func load() {
@@ -25,6 +27,37 @@ public class SnapBillingPlugin: CAPPlugin, CAPBridgedPlugin {
         };
         """
         bridge?.eval(js: js)
+    }
+
+    @objc func prices(_ call: CAPPluginCall) {
+        let ids = ["com.snaptile.builder", "com.snaptile.master", "com.snaptile.yearly"]
+        Task {
+            do {
+                let products = try await Product.products(for: ids)
+                var prices: [String: String] = [:]
+                for product in products {
+                    prices[product.id] = product.displayPrice
+                }
+                call.resolve(prices)
+            } catch {
+                call.reject(error.localizedDescription)
+            }
+        }
+    }
+
+    @objc func manage(_ call: CAPPluginCall) {
+        Task { @MainActor in
+            do {
+                guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first else {
+                    call.reject("No window")
+                    return
+                }
+                try await AppStore.showManageSubscriptions(in: scene)
+                call.resolve()
+            } catch {
+                call.reject(error.localizedDescription)
+            }
+        }
     }
 
     @objc func purchase(_ call: CAPPluginCall) {
