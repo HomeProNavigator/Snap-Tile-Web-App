@@ -1,0 +1,18 @@
+{
+	"appId": "com.snaptile.play",
+	"appName": "SnapTile",
+	"webDir": "dist-ios",
+	"backgroundColor": "#efeaff",
+	"ios": {
+		"contentInset": "never",
+		"backgroundColor": "#efeaff",
+		"allowsLinkPreview": false
+	},
+	"server": {
+		"iosScheme": "capacitor",
+		"androidScheme": "https"
+	},
+	"packageClassList": [
+		"SnapBillingPlugin"
+	]
+}

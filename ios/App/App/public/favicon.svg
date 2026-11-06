@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="SnapTile">
+  <rect width="32" height="32" rx="8" fill="#E7DFFF"/>
+  <rect x="3.5" y="11" width="16" height="16" rx="3.5" fill="#C9B6FF"/>
+  <polygon points="15,3.5 28.5,17 15,17" fill="#FF7A6A"/>
+</svg>

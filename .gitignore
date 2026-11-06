@@ -1,0 +1,15 @@
+node_modules
+dist
+dist-ios
+.output
+.nitro
+.vercel
+.env
+.env.*
+*.log
+.DS_Store
+attachments
+screenshots
+artifacts
+
+screenshots-*.png
