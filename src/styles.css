@@ -33,6 +33,17 @@
     background: var(--color-bg);
     color: var(--color-fg);
     font-family: var(--font-sans);
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  input,
+  textarea,
+  .snap-doc,
+  .snap-doc-body {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
   }
   button,
   input {
@@ -477,6 +488,9 @@
   background: #e7e4fb;
   box-shadow: inset 0 0 0 1px var(--color-border);
   touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .snap-stage > div:not(.snap-goal) {

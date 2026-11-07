@@ -387,7 +387,7 @@ function roofReach(shape: Piece["shape"]) {
 function FitCamera({ yaw, pitch, span, zoom = 1 }: { yaw: number; pitch: number; span: number; zoom?: number }) {
   const camera = useThree((state) => state.camera);
   useLayoutEffect(() => {
-    const distance = Math.max(8.6, span * 2.15) / zoom;
+    const distance = Math.max(7.3, span * 1.85) / zoom;
     const horiz = Math.cos(pitch) * distance;
     camera.position.set(Math.sin(yaw) * horiz, Math.sin(pitch) * distance, Math.cos(yaw) * horiz);
     camera.lookAt(0, 0, 0);
