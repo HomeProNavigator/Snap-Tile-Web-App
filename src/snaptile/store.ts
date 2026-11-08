@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import { buildBadges, earnedPuzzleBadges } from "./badges";
+import { buildBadges, earnedPuzzleBadges, badgeJustFinished, BADGES } from "./badges";
 import { playTone, setMuted } from "./audio";
+import { armWin, resetClock } from "./finale-clock";
 import { haptic } from "./haptics";
 import { PUZZLES } from "./puzzles";
 import { normalizePiece, occupancyKey, pieceKey, pieceLimit, puzzleCap, sameKind, samePiece, type Cutout, type Piece, type Shape, type Tier, type TileColor, type TileKind, type Turn } from "./tiles";
@@ -17,13 +18,23 @@ export type View =
   | "free"
   | "puzzles"
   | "play"
-  | "celebrate"
   | "badges"
   | "account"
   | "paywall"
   | "privacy"
   | "terms"
   | "trail";
+
+export type Win = {
+  kind: "puzzle" | "free";
+  puzzleId: number | null;
+  replay: boolean;
+  hintFree: boolean;
+  buddy: string | null;
+  buddyAnimal: string | null;
+  from: string;
+  at: number;
+};
 
 type Persisted = {
   onboarded: boolean;
@@ -63,6 +74,7 @@ type State = Persisted & {
   bump: number;
   buddyFrom: string;
   hop: { from: number; to: number } | null;
+  win: Win | null;
   showLock: (kind: "tiles" | "pieces") => void;
   hideLock: () => void;
   clearHop: () => void;
@@ -88,6 +100,7 @@ type State = Persisted & {
   undoLast: () => void;
   useHint: () => void;
   finishFree: () => void;
+  clearWin: () => void;
   dismissFresh: () => void;
   dismissOffer: () => void;
   saveBuild: () => void;
@@ -172,6 +185,7 @@ export const useSnap = create<State>((set, get) => ({
   bump: 0,
   buddyFrom: "cub",
   hop: null,
+  win: null,
 
   hydrate: () => {
     let data = blank();
@@ -210,7 +224,10 @@ export const useSnap = create<State>((set, get) => ({
     playTone("tap");
   },
 
-  go: (view) => set({ view, notice: null }),
+  go: (view) => {
+    resetClock();
+    set({ view, notice: null, win: null });
+  },
 
   setSound: (on) => {
     set({ sound: on });
@@ -266,13 +283,15 @@ export const useSnap = create<State>((set, get) => ({
   },
 
   signOut: () => {
-    set({ name: "", view: "onboarding", onboarded: false });
+    resetClock();
+    set({ name: "", view: "onboarding", onboarded: false, win: null });
     persist({ ...pick(get()), name: "", onboarded: false });
   },
 
   resetDevice: () => {
     const fresh = blank();
-    set({ ...fresh, ready: true, view: "onboarding", placed: [], puzzleId: null });
+    resetClock();
+    set({ ...fresh, ready: true, view: "onboarding", placed: [], puzzleId: null, win: null });
     persist(fresh);
   },
 
@@ -296,6 +315,7 @@ export const useSnap = create<State>((set, get) => ({
       set({ notice: "Finish the puzzle just before this one first." });
       return;
     }
+    resetClock();
     set({
       view: "play",
       puzzleId: id,
@@ -305,10 +325,12 @@ export const useSnap = create<State>((set, get) => ({
       hintUsed: false,
       hintSpot: null,
       notice: null,
+      win: null,
     });
   },
 
-  startFree: () =>
+  startFree: () => {
+    resetClock();
     set({
       view: "free",
       puzzleId: null,
@@ -320,7 +342,9 @@ export const useSnap = create<State>((set, get) => ({
       hintUsed: false,
       hintSpot: null,
       notice: null,
-    }),
+      win: null,
+    });
+  },
 
   placeSocket: (piece) => {
     const state = get();
@@ -379,17 +403,45 @@ export const useSnap = create<State>((set, get) => ({
       let badges = mergeBadges(state.badges, earnedPuzzleBadges(completed));
       if (noHintStreak >= 3) badges = mergeBadges(badges, ["turtle"]);
       const fresh = newcomers(state.badges, badges);
-      const mascot = fresh.length ? fresh[fresh.length - 1]! : state.mascot;
       const day = new Date().toISOString().slice(0, 10);
       const showOffer = puzzle.id === 10 && !state.completed.includes(10) && state.tier === "free" && state.offerDay !== day;
       const offer = showOffer ? "puzzles" : state.offer;
       const offerDay = showOffer ? day : state.offerDay;
       const firstClear = !state.completed.includes(puzzle.id);
       const hop = firstClear ? { from: puzzle.id, to: puzzle.id < 100 ? puzzle.id + 1 : 101 } : state.hop;
-      set({ placed, held: null, completed, noHintStreak, badges, fresh, view: "celebrate", notice: null, offer, offerDay, mascot, buddyFrom: state.mascot, hop });
+      const range = badgeJustFinished(puzzle.id);
+      const rangeBadge = range && fresh.includes(range.id) ? range : undefined;
+      const turtle = fresh.includes("turtle") ? BADGES.find((badge) => badge.id === "turtle") : undefined;
+      const buddyBadge = rangeBadge ?? turtle;
+      const mascot = buddyBadge ? buddyBadge.id : state.mascot;
+      armWin({ punch: true });
+      set({
+        placed,
+        held: null,
+        completed,
+        noHintStreak,
+        badges,
+        fresh: [],
+        view: "play",
+        notice: null,
+        offer,
+        offerDay,
+        mascot,
+        buddyFrom: state.mascot,
+        hop,
+        selected: null,
+        win: {
+          kind: "puzzle",
+          puzzleId: puzzle.id,
+          replay: !firstClear,
+          hintFree: !state.hintUsed,
+          buddy: firstClear && buddyBadge ? buddyBadge.id : null,
+          buddyAnimal: firstClear && buddyBadge ? buddyBadge.animal : null,
+          from: state.mascot,
+          at: Date.now(),
+        },
+      });
       persist({ ...pick(get()), completed, noHintStreak, badges, offerDay, mascot });
-      playTone("win");
-      haptic("strong");
       return;
     }
     set({ placed, held: more ? state.held : null, notice: null, selected: null, hintSpot });
@@ -447,10 +499,35 @@ export const useSnap = create<State>((set, get) => ({
       at: Date.now(),
     };
     const nextSaved = [saved, ...state.saved].slice(0, 12);
-    set({ freeBuilds, badges, fresh, view: "celebrate", puzzleId: null, saved: nextSaved, mascot, buddyFrom: state.mascot, selected: null });
+    armWin({ punch: false });
+    set({
+      freeBuilds,
+      badges,
+      fresh,
+      view: "free",
+      puzzleId: null,
+      saved: nextSaved,
+      mascot,
+      buddyFrom: state.mascot,
+      selected: null,
+      held: null,
+      win: {
+        kind: "free",
+        puzzleId: null,
+        replay: false,
+        hintFree: false,
+        buddy: null,
+        buddyAnimal: null,
+        from: state.mascot,
+        at: Date.now(),
+      },
+    });
     persist({ ...pick(get()), freeBuilds, badges, saved: nextSaved, mascot });
-    playTone("win");
-    haptic("strong");
+  },
+
+  clearWin: () => {
+    resetClock();
+    set({ win: null });
   },
 
   dismissFresh: () => set((state) => ({ fresh: state.fresh.slice(1) })),
@@ -488,7 +565,7 @@ export const useSnap = create<State>((set, get) => ({
   loadBuild: (id) => {
     const found = get().saved.find((b) => b.id === id);
     if (!found) return;
-    set({ view: "free", puzzleId: null, placed: found.pieces, selected: null, notice: null });
+    set({ view: "free", puzzleId: null, placed: found.pieces, selected: null, notice: null, win: null });
   },
 
   deleteBuild: (id) => {

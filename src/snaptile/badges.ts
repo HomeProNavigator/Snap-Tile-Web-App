@@ -46,6 +46,20 @@ export function badgeJustFinished(puzzleId: number): Badge | undefined {
   return BADGES.find((badge) => RANGES[badge.id]?.[1] === puzzleId);
 }
 
+const PATH = ["bunny", "zebra", "kitten", "puppy", "owl", "fox", "elephant", "bear", "tiger", "dragon"] as const;
+
+/** Progress toward the next trail buddy. Hidden on the puzzle that earns one, and after the dragon. */
+export function nextBuddy(puzzleId: number): { id: string; from: number; to: number; left: number } | null {
+  for (const id of PATH) {
+    const range = RANGES[id];
+    if (!range) continue;
+    const [from, to] = range;
+    if (puzzleId < from || puzzleId > to || puzzleId === to) continue;
+    return { id, from, to, left: to - puzzleId };
+  }
+  return null;
+}
+
 export function earnedPuzzleBadges(completed: number[]): string[] {
   const have = new Set(completed);
   const ids: string[] = [];

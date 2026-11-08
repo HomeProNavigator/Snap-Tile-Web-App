@@ -1,11 +1,12 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Award, Eye, EyeOff, Hammer, Lightbulb, Lock, Puzzle, RotateCw, Star, Trash2, Undo2, UserRound, Volume2, VolumeX, X } from "lucide-react";
 import { BADGES, badgeVisible } from "./badges";
-import { Celebrate } from "./celebrate";
+import { FinaleOverlay, useFinale } from "./finale";
 import { playTone } from "./audio";
 import { deleteCue, setDeleteAnchor, subscribeDelete } from "./delete-anchor";
 import { MascotFace } from "./mascot";
 import { TrailPreview, TrailScreen } from "./map";
+import { zoneFor } from "./zones";
 import { orbitLock } from "./orbit";
 import { PUZZLES, guideLabel } from "./puzzles";
 import { useSnap } from "./store";
@@ -302,12 +303,22 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
   const bump = useSnap((s) => s.bump);
   const puzzle = PUZZLES.find((p) => p.id === puzzleId);
   const full = mode === "free" && placed.length >= pieceLimit(tier);
-  const quiet = picture || full;
+  const win = useSnap((s) => s.win);
+  const live = win && ((mode === "free" && win.kind === "free") || (mode === "play" && win.kind === "puzzle")) ? win : null;
+  const finale = useFinale(live);
+  const quiet = picture || full || Boolean(live);
+  const zone = live?.puzzleId ? zoneFor(live.puzzleId) : null;
   useEffect(() => setMounted(true), []);
 
   return (
-    <section className="snap-play">
+    <section className={live ? `snap-play is-win${finale.show.hudOut ? " is-hud-out" : ""}${finale.show.stage ? " is-stage" : ""}` : "snap-play"}>
       <DeleteBubble />
+      {live && finale.show.stage ? (
+        <div className="finale-back is-on">
+          {zone ? <img src={zone.src} alt="" /> : <div className="finale-free-back" />}
+          <div className="finale-vignette" />
+        </div>
+      ) : null}
       <header className="snap-top snap-float">
         <button className="snap-icon" aria-label="Back" onClick={() => go(mode === "free" ? "home" : "puzzles")}>
           <ArrowLeft />
@@ -338,6 +349,7 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
       <div
         className="snap-stage"
         onPointerDown={(event) => {
+          if (live) return;
           orbitLock.moved = false;
           orbitLock.picked = false;
           drag.current = { x: event.clientX, y: event.clientY, yaw, pitch, active: true };
@@ -362,12 +374,14 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
           if (drag.current) drag.current.active = false;
         }}
       >
+        {finale.show.castle ? <img className="finale-castle" src={`${import.meta.env.BASE_URL}map/landmark-castle.webp`} alt="" /> : null}
+        {finale.show.stage ? <div className="finale-rays" /> : null}
         {mounted ? (
           <Suspense fallback={<p className="snap-note">Setting the table…</p>}>
             <TileCanvas yaw={yaw} pitch={pitch} quiet={quiet} />
           </Suspense>
         ) : null}
-        {mode === "play" && puzzle && mounted && !picture && !goalOpen ? (
+        {mode === "play" && puzzle && mounted && !picture && !goalOpen && !live ? (
           <button
             type="button"
             className="snap-goal"
@@ -521,6 +535,7 @@ function BuildChrome({ mode }: { mode: "free" | "play" }) {
       )}
       </div>
       </div>
+      {live ? <FinaleOverlay win={live} show={finale.show} onSkip={finale.skip} /> : null}
     </section>
   );
 }
@@ -582,8 +597,8 @@ function BadgePop({ badgeId, name, animal, onDone }: { badgeId: string; name: st
   const buddyFrom = useSnap((s) => s.buddyFrom);
   return (
     <div className="snap-pop" role="dialog" aria-label={`New buddy, ${animal}`}>
-      {Array.from({ length: 16 }, (_, i) => (
-        <span key={i} className="snap-confetti" style={{ left: `${(i * 17) % 100}%`, animationDelay: `${(i % 6) * 0.12}s`, background: ["#ff5a7a", "#ffd15a", "#5ad1ff", "#7d5cff", "#3ddc97", "#ff8a3d"][i % 6] }} />
+      {Array.from({ length: 8 }, (_, i) => (
+        <img key={i} className="snap-pop-spark" src={`${import.meta.env.BASE_URL}celebrate/sparkle.webp`} alt="" style={{ left: `${8 + ((i * 12) % 80)}%`, animationDelay: `${i * 0.06}s` }} />
       ))}
       <p className="snap-kicker">New buddy!</p>
       <div className="snap-buddy-swap">
@@ -950,8 +965,9 @@ export function SnapApp() {
   const view = useSnap((s) => s.view);
   const offer = useSnap((s) => s.offer);
   const fresh = useSnap((s) => s.fresh);
+  const win = useSnap((s) => s.win);
   const dismissFresh = useSnap((s) => s.dismissFresh);
-  const popped = fresh[0] ? BADGES.find((badge) => badge.id === fresh[0]) : undefined;
+  const popped = fresh[0] && !win ? BADGES.find((badge) => badge.id === fresh[0]) : undefined;
   useEffect(() => {
     hydrate();
     void currentNative().then((tier) => {
@@ -967,7 +983,6 @@ export function SnapApp() {
       {view === "free" ? <BuildChrome mode="free" /> : null}
       {view === "puzzles" ? <Puzzles /> : null}
       {view === "play" ? <BuildChrome mode="play" /> : null}
-      {view === "celebrate" ? <Celebrate /> : null}
       {view === "badges" ? <BadgesScreen /> : null}
       {view === "account" ? <Account /> : null}
       {view === "paywall" ? <Paywall /> : null}

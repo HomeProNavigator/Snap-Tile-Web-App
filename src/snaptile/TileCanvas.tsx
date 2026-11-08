@@ -1,7 +1,8 @@
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { deleteCue, setDeleteAnchor } from "./delete-anchor";
 import * as THREE from "three";
+import { clock } from "./finale-clock";
 import { orbitLock } from "./orbit";
 import { guidanceCount, PUZZLES } from "./puzzles";
 import { meshLift, roofAlpha, roofHingeY, sockets, TILE, visualCenter, facingOf, pickPads } from "./space";
@@ -138,6 +139,7 @@ function TileMesh({
   hidden,
   selected,
   arrive,
+  order,
   onPick,
 }: {
   piece: Piece;
@@ -147,6 +149,7 @@ function TileMesh({
   hidden?: boolean;
   selected?: boolean;
   arrive?: boolean;
+  order?: number;
   onPick?: () => void;
 }) {
   const placedColor = TILE_HEX[piece.color];
@@ -175,24 +178,53 @@ function TileMesh({
             : edges.square;
   const rim = ghost ? "#5c567f" : rimOf(color);
   const group = useRef<THREE.Group>(null);
+  const mat = useRef<THREE.MeshPhysicalMaterial>(null);
   const born = useRef(arrive ? performance.now() : 0);
+  const litSince = useRef(0);
+  const wasLit = useRef(false);
   const { camera, gl } = useThree();
   const spot = useMemo(() => new THREE.Vector3(), []);
   useFrame(() => {
     const node = group.current;
     if (!node) return;
+    const now = performance.now();
     let scale = 1;
     let lift = 0;
     let wobble = 0;
     if (arrive && born.current) {
-      const t = Math.min(1, (performance.now() - born.current) / 160);
-      const overshoot = Math.sin(t * Math.PI) * (1 - t) * 0.18;
-      scale = 0.86 + 0.14 * t + overshoot;
-      lift = (1 - t) * 0.28;
+      const age = now - born.current;
+      const punch = clock.punch && !clock.reduced;
+      if (punch) {
+        if (age < 200) {
+          const t = age / 200;
+          scale = 0.72 + 0.28 * t + Math.sin(t * Math.PI) * (1 - t) * 0.42;
+          lift = (1 - t) * 0.62;
+        } else if (age < 320) {
+          scale = 1.15;
+        } else if (age < 500) {
+          const t = (age - 320) / 180;
+          scale = 1.15 - 0.15 * (1 - (1 - t) ** 3);
+        }
+      } else {
+        const t = Math.min(1, age / 160);
+        const overshoot = Math.sin(t * Math.PI) * (1 - t) * 0.18;
+        scale = 0.86 + 0.14 * t + overshoot;
+        lift = (1 - t) * 0.28;
+      }
     }
-    if (selected && !ghost) {
+    const lit = order != null && clock.on && order < clock.lit;
+    if (lit && !wasLit.current) {
+      wasLit.current = true;
+      litSince.current = now;
+    }
+    if (!lit) wasLit.current = false;
+    if (lit && litSince.current && !clock.reduced) {
+      const t = Math.min(1, (now - litSince.current) / 320);
+      scale += Math.sin(t * Math.PI) * (1 - t) * 0.12;
+    }
+    if (selected && !ghost && !clock.on) {
       lift += 0.12;
-      wobble = Math.sin(performance.now() / 90) * 0.08;
+      wobble = Math.sin(now / 90) * 0.08;
       node.getWorldPosition(spot);
       spot.y += 0.45;
       spot.project(camera);
@@ -204,8 +236,32 @@ function TileMesh({
       });
     }
     if (deleteCue.shrink) {
-      const t = Math.min(1, (performance.now() - deleteCue.shrink) / 160);
+      const t = Math.min(1, (now - deleteCue.shrink) / 160);
       scale *= 1 - t;
+    }
+    let flash = 0;
+    if (clock.on && !clock.reduced && clock.flashUntil && order != null) {
+      const start = clock.flashUntil - 120;
+      const age = now - start;
+      if (age >= 0 && age < 320) flash = age < 120 ? 1 : 1 - (age - 120) / 200;
+    }
+    if (mat.current) {
+      if (flash > 0.02) {
+        mat.current.emissive.set("#ffffff");
+        mat.current.emissiveIntensity = 1.1 * flash;
+      } else if (lit) {
+        mat.current.emissive.set("#fff4cf");
+        mat.current.emissiveIntensity = 0.55;
+      } else if (selected && !ghost) {
+        mat.current.emissive.set("#ffffff");
+        mat.current.emissiveIntensity = 0.28;
+      } else if (ghost && bright && guide && !hidden) {
+        mat.current.emissive.set("#ffffff");
+        mat.current.emissiveIntensity = 0.16;
+      } else {
+        mat.current.emissive.set("#000000");
+        mat.current.emissiveIntensity = 0;
+      }
     }
     node.scale.setScalar(Math.max(0.001, scale));
     node.position.y = lift;
@@ -227,6 +283,7 @@ function TileMesh({
         }
       >
         <meshPhysicalMaterial
+          ref={mat}
           color={color}
           roughness={0.12}
           metalness={0.02}
@@ -263,6 +320,7 @@ function TileView({
   hidden,
   selected,
   arrive,
+  order,
   onPick,
   seat,
 }: {
@@ -276,10 +334,11 @@ function TileView({
   hidden?: boolean;
   selected?: boolean;
   arrive?: boolean;
+  order?: number;
   onPick?: () => void;
   seat?: number;
 }) {
-  const mesh = <TileMesh piece={piece} ghost={ghost} bright={bright} guide={guide} hidden={hidden} selected={selected} arrive={arrive} onPick={onPick} />;
+  const mesh = <TileMesh piece={piece} ghost={ghost} bright={bright} guide={guide} hidden={hidden} selected={selected} arrive={arrive} order={order} onPick={onPick} />;
   const at = (x: number, y: number, z: number): [number, number, number] => [x - ox, y - oy, z - oz];
   if (piece.shape === "wheel") {
     const outward = 0.34;
@@ -386,13 +445,36 @@ function roofReach(shape: Piece["shape"]) {
 
 function FitCamera({ yaw, pitch, span, zoom = 1 }: { yaw: number; pitch: number; span: number; zoom?: number }) {
   const camera = useThree((state) => state.camera);
+  const size = useThree((state) => state.size);
+  const blend = useRef(0);
+  const spin = useRef(0);
   useLayoutEffect(() => {
-    const distance = Math.max(7.3, span * 1.85) / zoom;
-    const horiz = Math.cos(pitch) * distance;
-    camera.position.set(Math.sin(yaw) * horiz, Math.sin(pitch) * distance, Math.cos(yaw) * horiz);
+    if (clock.stage) return;
+    const playDist = Math.max(7.3, span * 1.85) / zoom;
+    const horiz = Math.cos(pitch) * playDist;
+    camera.position.set(Math.sin(yaw) * horiz, Math.sin(pitch) * playDist, Math.cos(yaw) * horiz);
     camera.lookAt(0, 0, 0);
-    camera.updateProjectionMatrix();
   }, [camera, yaw, pitch, span, zoom]);
+  useFrame((_, dt) => {
+    if (clock.reduced) blend.current = clock.stage ? 1 : 0;
+    else blend.current = THREE.MathUtils.damp(blend.current, clock.stage ? 1 : 0, 4, dt);
+    if (!clock.on) {
+      blend.current = 0;
+      spin.current = 0;
+    } else if (clock.spin && !clock.reduced) {
+      spin.current += dt * ((Math.PI * 2) / 8);
+    }
+    const playDist = Math.max(7.3, span * 1.85) / zoom;
+    const aspect = size.width / Math.max(1, size.height);
+    const vfov = (32 * Math.PI) / 180;
+    const stageDist = span / 0.55 / Math.max(0.45, aspect) / (2 * Math.tan(vfov / 2));
+    const dist = THREE.MathUtils.lerp(playDist, stageDist, blend.current);
+    const lookShift = blend.current * 0.24 * dist * Math.tan(vfov / 2);
+    const yawNow = yaw + spin.current;
+    const horiz = Math.cos(pitch) * dist;
+    camera.position.set(Math.sin(yawNow) * horiz, Math.sin(pitch) * dist, Math.cos(yawNow) * horiz);
+    camera.lookAt(0, -lookShift, 0);
+  });
   return null;
 }
 
@@ -421,7 +503,7 @@ function bounds(pieces: Piece[], family: Piece[] = pieces) {
   };
 }
 
-function PreviewScene({ pieces, yaw, pitch, zoom = 1, glow = -1 }: { pieces: Piece[]; yaw: number; pitch: number; zoom?: number; glow?: number }) {
+function PreviewScene({ pieces, yaw, pitch, zoom = 1 }: { pieces: Piece[]; yaw: number; pitch: number; zoom?: number }) {
   const box = useMemo(() => bounds(pieces), [pieces]);
   return (
     <>
@@ -434,11 +516,148 @@ function PreviewScene({ pieces, yaw, pitch, zoom = 1, glow = -1 }: { pieces: Pie
           oy={box.oy}
           oz={box.oz}
           seat={roofHingeY(piece, pieces)}
-          selected={glow >= 0 && index === glow % pieces.length}
         />
       ))}
     </>
   );
+}
+
+function ClearColor() {
+  const { gl, scene } = useThree();
+  const solid = useMemo(() => new THREE.Color("#e7e4fb"), []);
+  useFrame(() => {
+    if (clock.on && clock.clear) {
+      scene.background = null;
+      gl.setClearColor(0x000000, 0);
+    } else {
+      scene.background = solid;
+      gl.setClearColor(solid, 1);
+    }
+  });
+  return null;
+}
+
+function Table({ pad, cells, oy }: { pad: number; cells: number; oy: number }) {
+  const fade = useRef(1);
+  const disc = useRef<THREE.MeshStandardMaterial>(null);
+  const grid = useRef<THREE.GridHelper>(null);
+  useFrame((_, dt) => {
+    const target = clock.on ? clock.floor : 1;
+    fade.current = THREE.MathUtils.damp(fade.current, target, target < fade.current ? 14 : 8, dt);
+    if (disc.current) {
+      disc.current.opacity = fade.current;
+      disc.current.transparent = true;
+    }
+    const helper = grid.current;
+    if (helper) {
+      const mats = Array.isArray(helper.material) ? helper.material : [helper.material];
+      for (const material of mats) {
+        material.transparent = true;
+        material.opacity = fade.current;
+      }
+      helper.visible = fade.current > 0.03;
+    }
+  });
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.06 - oy, 0]} raycast={() => null}>
+        <circleGeometry args={[pad, 48]} />
+        <meshStandardMaterial ref={disc} color="#f6f3ff" transparent />
+      </mesh>
+      <gridHelper ref={grid} args={[cells, cells, "#ddd6f5", "#efeafc"]} position={[0, -0.05 - oy, 0]} raycast={() => null} />
+    </group>
+  );
+}
+
+function Pedestal({ oy, span }: { oy: number; span: number }) {
+  const group = useRef<THREE.Group>(null);
+  const rim = useRef<THREE.MeshStandardMaterial>(null);
+  const rise = useRef(0);
+  const radius = Math.max(1.25, span * 0.46);
+  useLayoutEffect(() => {
+    if (group.current) {
+      group.current.scale.y = 0.001;
+      group.current.visible = false;
+    }
+  }, []);
+  useFrame((_, dt) => {
+    const target = clock.stage ? 1 : 0;
+    rise.current = THREE.MathUtils.damp(rise.current, target, 7, dt);
+    if (group.current) {
+      group.current.scale.y = Math.max(0.001, rise.current);
+      group.current.visible = rise.current > 0.02;
+    }
+    if (rim.current && clock.pedestal) {
+      rim.current.color.set(clock.pedestal);
+      rim.current.emissive.set(clock.pedestal);
+    }
+  });
+  return (
+    <group ref={group} position={[0, -oy - 0.02, 0]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]} raycast={() => null}>
+        <circleGeometry args={[radius * 1.2, 40]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.16} />
+      </mesh>
+      <mesh position={[0, 0.08, 0]} raycast={() => null}>
+        <cylinderGeometry args={[radius, radius * 1.05, 0.16, 40]} />
+        <meshStandardMaterial ref={rim} color={clock.pedestal} emissive={clock.pedestal} emissiveIntensity={0.4} roughness={0.35} />
+      </mesh>
+      <mesh position={[0, 0.17, 0]} raycast={() => null}>
+        <cylinderGeometry args={[radius * 0.96, radius * 0.96, 0.07, 40]} />
+        <meshStandardMaterial color="#f6f1e6" roughness={0.5} />
+      </mesh>
+    </group>
+  );
+}
+
+function BuildSparkles({ pieces, box }: { pieces: Piece[]; box: { ox: number; oy: number; oz: number } }) {
+  const tex = useLoader(THREE.TextureLoader, `${import.meta.env.BASE_URL}celebrate/sparkle.webp`);
+  const group = useRef<THREE.Group>(null);
+  const alive = useRef<{ sprite: THREE.Sprite; born: number; y: number }[]>([]);
+  const seen = useRef(0);
+  const nextTwinkle = useRef(0);
+  useFrame(() => {
+    const root = group.current;
+    if (!root) return;
+    const now = performance.now();
+    if (clock.lit < seen.current) seen.current = clock.lit;
+    if (clock.on && clock.lit > seen.current) {
+      const target = Math.min(clock.lit, pieces.length);
+      const jump = target - seen.current;
+      const spawn = jump > 3 ? pieces.filter((_, index) => index % Math.ceil(pieces.length / 4) === 0) : pieces.slice(seen.current, target);
+      for (const piece of spawn) {
+        const [x, y, z] = visualCenter(piece, pieces);
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+        sprite.position.set(x - box.ox, y - box.oy + 0.3, z - box.oz);
+        sprite.scale.set(0.45, 0.45, 0.45);
+        root.add(sprite);
+        alive.current.push({ sprite, born: now, y: sprite.position.y });
+      }
+      seen.current = target;
+    }
+    if (clock.spin && pieces.length && now > nextTwinkle.current) {
+      nextTwinkle.current = now + 2800;
+      const piece = pieces[Math.floor(Math.random() * pieces.length)]!;
+      const [x, y, z] = visualCenter(piece, pieces);
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+      sprite.position.set(x - box.ox, y - box.oy + 0.35, z - box.oz);
+      root.add(sprite);
+      alive.current.push({ sprite, born: now, y: sprite.position.y });
+    }
+    alive.current = alive.current.filter((item) => {
+      const t = (now - item.born) / 700;
+      if (t >= 1) {
+        root.remove(item.sprite);
+        item.sprite.material.dispose();
+        return false;
+      }
+      item.sprite.material.opacity = t < 0.2 ? t / 0.2 : 1 - (t - 0.2) / 0.8;
+      item.sprite.position.y = item.y + t * 0.35;
+      item.sprite.scale.setScalar(0.35 + t * 0.4);
+      return true;
+    });
+  });
+  return <group ref={group} />;
 }
 
 function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: boolean }) {
@@ -509,11 +728,9 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
   return (
     <>
       <FitCamera yaw={yaw} pitch={pitch} span={box.span} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.06 - box.oy, 0]} raycast={() => null}>
-        <circleGeometry args={[pad, 48]} />
-        <meshStandardMaterial color="#f6f3ff" />
-      </mesh>
-      <gridHelper args={[grid, grid, "#ddd6f5", "#efeafc"]} position={[0, -0.05 - box.oy, 0]} raycast={() => null} />
+      <Table pad={pad} cells={grid} oy={box.oy} />
+      <Pedestal oy={box.oy} span={box.span} />
+      <BuildSparkles pieces={placed} box={box} />
       {pads.map((piece) => (
         <TileView
           key={`s-${pieceKey(piece)}`}
@@ -564,6 +781,7 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
           seat={roofHingeY(piece, family)}
           selected={selected === index}
           arrive={index === placed.length - 1}
+          order={index}
           onPick={puzzle ? undefined : () => selectPiece(index)}
         />
       ))}
@@ -571,15 +789,15 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
   );
 }
 
-export function TileCanvas({ yaw, pitch, preview, quiet, zoom = 1, glow = -1 }: { yaw: number; pitch: number; preview?: Piece[]; quiet?: boolean; zoom?: number; glow?: number }) {
+export function TileCanvas({ yaw, pitch, preview, quiet, zoom = 1 }: { yaw: number; pitch: number; preview?: Piece[]; quiet?: boolean; zoom?: number }) {
   return (
     <Canvas camera={{ position: [4.2, 3.2, 4.2], fov: 32, near: 0.1, far: 80 }} dpr={[1, 1.6]} gl={{ antialias: true, alpha: true }}>
-      <color attach="background" args={["#e7e4fb"]} />
+      <ClearColor />
       <ambientLight intensity={0.85} />
       <hemisphereLight args={["#fff4ea", "#c9d4f5", 0.55]} />
       <directionalLight position={[4, 8, 3]} intensity={1.25} />
       <directionalLight position={[-3, 4, -2]} intensity={0.4} />
-      {preview ? <PreviewScene pieces={preview} yaw={yaw} pitch={pitch} zoom={zoom} glow={glow} /> : <Scene yaw={yaw} pitch={pitch} quiet={quiet} />}
+      {preview ? <PreviewScene pieces={preview} yaw={yaw} pitch={pitch} zoom={zoom} /> : <Scene yaw={yaw} pitch={pitch} quiet={quiet} />}
     </Canvas>
   );
 }
