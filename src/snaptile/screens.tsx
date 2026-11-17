@@ -618,6 +618,9 @@ function BadgesScreen() {
   const go = useSnap((s) => s.go);
   const badges = useSnap((s) => s.badges);
   const tier = useSnap((s) => s.tier);
+  const mascot = useSnap((s) => s.mascot);
+  const chooseMascot = useSnap((s) => s.chooseMascot);
+  const walking = BADGES.find((badge) => badge.id === mascot);
   return (
     <section className="snap-screen">
       <header className="snap-top">
@@ -629,15 +632,40 @@ function BadgesScreen() {
           <p>{badges.length} earned</p>
         </div>
       </header>
+      <div className="snap-mascot-pick">
+        <MascotFace id={mascot} />
+        <p>
+          {walking ? walking.animal : "Cub"} is walking the trail
+          <span>Tap an unlocked badge to choose your mascot.</span>
+        </p>
+      </div>
       <div className="snap-badge-grid">
         {BADGES.filter((badge) => badgeVisible(badge, tier)).map((badge) => {
           const on = badges.includes(badge.id);
+          const picked = on && mascot === badge.id;
+          if (!on) {
+            return (
+              <article key={badge.id} className="snap-badge" aria-disabled="true">
+                <BadgeArt id={badge.id} earned={false} />
+                <strong>{badge.name}</strong>
+                <span>Not yet</span>
+              </article>
+            );
+          }
           return (
-            <article key={badge.id} className={on ? "snap-badge is-on" : "snap-badge"}>
-              <BadgeArt id={badge.id} earned={on} />
+            <button
+              key={badge.id}
+              type="button"
+              className={picked ? "snap-badge is-on is-picked" : "snap-badge is-on"}
+              aria-pressed={picked}
+              aria-label={picked ? `${badge.animal}, walking the trail` : `Choose ${badge.animal} as mascot`}
+              onClick={() => chooseMascot(badge.id)}
+            >
+              <BadgeArt id={badge.id} earned />
               <strong>{badge.name}</strong>
-              <span>{on ? badge.detail : "Not yet"}</span>
-            </article>
+              <span>{badge.detail}</span>
+              <em className="snap-badge-role">{picked ? "Walking the trail" : "Tap to choose"}</em>
+            </button>
           );
         })}
       </div>

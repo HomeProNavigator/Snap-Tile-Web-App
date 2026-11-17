@@ -49,6 +49,7 @@ type Persisted = {
   noHintStreak: number;
   sound: boolean;
   mascot: string;
+  mascotChosen: boolean;
   offerDay: string;
 };
 
@@ -107,6 +108,7 @@ type State = Persisted & {
   loadBuild: (id: string) => void;
   deleteBuild: (id: string) => void;
   clearNotice: () => void;
+  chooseMascot: (id: string) => void;
 };
 
 function blank(): Persisted {
@@ -123,6 +125,7 @@ function blank(): Persisted {
     noHintStreak: 0,
     sound: true,
     mascot: "cub",
+    mascotChosen: false,
     offerDay: "",
   };
 }
@@ -150,6 +153,7 @@ function pick(state: State): Persisted {
     noHintStreak: state.noHintStreak,
     sound: state.sound,
     mascot: state.mascot,
+    mascotChosen: state.mascotChosen,
     offerDay: state.offerDay,
   };
 }
@@ -198,6 +202,7 @@ export const useSnap = create<State>((set, get) => ({
           ...parsed,
           freeLimitHits: parsed.freeLimitHits ?? 0,
           mascot: parsed.mascot || "cub",
+          mascotChosen: parsed.mascotChosen === true,
           offerDay: parsed.offerDay ?? "",
           saved: (parsed.saved ?? []).map((build) => ({
             ...build,
@@ -413,7 +418,7 @@ export const useSnap = create<State>((set, get) => ({
       const rangeBadge = range && fresh.includes(range.id) ? range : undefined;
       const turtle = fresh.includes("turtle") ? BADGES.find((badge) => badge.id === "turtle") : undefined;
       const buddyBadge = rangeBadge ?? turtle;
-      const mascot = buddyBadge ? buddyBadge.id : state.mascot;
+      const mascot = state.mascotChosen || !buddyBadge ? state.mascot : buddyBadge.id;
       armWin({ punch: true });
       set({
         placed,
@@ -491,7 +496,7 @@ export const useSnap = create<State>((set, get) => ({
     let badges = mergeBadges(state.badges, buildBadges(state.placed, state.tier));
     if (freeBuilds >= 5) badges = mergeBadges(badges, ["monkey"]);
     const fresh = newcomers(state.badges, badges);
-    const mascot = fresh.length ? fresh[fresh.length - 1]! : state.mascot;
+    const mascot = state.mascotChosen || fresh.length === 0 ? state.mascot : fresh[fresh.length - 1]!;
     const saved: SavedBuild = {
       id: `${Date.now()}`,
       name: state.name ? `${state.name}'s build` : "My build",
@@ -576,6 +581,14 @@ export const useSnap = create<State>((set, get) => ({
   },
 
   clearNotice: () => set({ notice: null }),
+
+  chooseMascot: (id) => {
+    const state = get();
+    if (!state.badges.includes(id) || !BADGES.some((badge) => badge.id === id)) return;
+    set({ mascot: id, mascotChosen: true });
+    persist({ ...pick(get()), mascot: id, mascotChosen: true });
+    playTone("tap");
+  },
 }));
 
 if (import.meta.env.DEV && typeof window !== "undefined") {

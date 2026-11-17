@@ -7,6 +7,7 @@ import { orbitLock } from "./orbit";
 import { guidanceCount, PUZZLES } from "./puzzles";
 import { meshLift, roofAlpha, roofHingeY, sockets, TILE, visualCenter, facingOf, pickPads } from "./space";
 import { useSnap } from "./store";
+import { choosePlacement } from "./place-target";
 import { pieceKey, sameKind, samePiece, TILE_HEX, type Cutout, type Piece } from "./tiles";
 
 const geos = {
@@ -131,6 +132,36 @@ function rimOf(hex: string) {
   return "#" + color.getHexString();
 }
 
+function pieceFrom(object: THREE.Object3D): Piece | undefined {
+  let node: THREE.Object3D | null = object;
+  while (node) {
+    const piece = node.userData.snapPiece as Piece | undefined;
+    if (piece) return piece;
+    node = node.parent;
+  }
+  return undefined;
+}
+
+function placementFromClick(event: { ray: THREE.Ray; object: THREE.Object3D }, fallback: Piece): Piece {
+  let root: THREE.Object3D = event.object;
+  while (root.parent) root = root.parent;
+  root.updateMatrixWorld(true);
+  const raycaster = new THREE.Raycaster();
+  raycaster.ray.copy(event.ray);
+  const seen = new Set<string>();
+  const hits: Piece[] = [];
+  for (const hit of raycaster.intersectObject(root, true)) {
+    const piece = pieceFrom(hit.object);
+    if (!piece) continue;
+    const key = pieceKey(piece);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    hits.push(piece);
+  }
+  const { held, placed } = useSnap.getState();
+  return choosePlacement(hits, held, placed, fallback);
+}
+
 function TileMesh({
   piece,
   ghost,
@@ -150,7 +181,7 @@ function TileMesh({
   selected?: boolean;
   arrive?: boolean;
   order?: number;
-  onPick?: () => void;
+  onPick?: (piece: Piece) => void;
 }) {
   const placedColor = TILE_HEX[piece.color];
   const color = ghost && !hidden && (!guide || bright) ? "#ffffff" : placedColor;
@@ -271,13 +302,14 @@ function TileMesh({
     <group ref={group}>
       <mesh
         geometry={geo}
+        userData={{ snapPiece: piece }}
         onClick={
           onPick
             ? (event) => {
                 event.stopPropagation();
                 orbitLock.picked = true;
                 if (orbitLock.moved) return;
-                onPick();
+                onPick(placementFromClick(event, piece));
               }
             : undefined
         }
@@ -335,7 +367,7 @@ function TileView({
   selected?: boolean;
   arrive?: boolean;
   order?: number;
-  onPick?: () => void;
+  onPick?: (piece: Piece) => void;
   seat?: number;
 }) {
   const mesh = <TileMesh piece={piece} ghost={ghost} bright={bright} guide={guide} hidden={hidden} selected={selected} arrive={arrive} order={order} onPick={onPick} />;
@@ -349,13 +381,14 @@ function TileView({
       <mesh
         position={pos}
         rotation={spin}
+        userData={{ snapPiece: piece }}
         onClick={
           onPick
             ? (event) => {
                 event.stopPropagation();
                 orbitLock.picked = true;
                 if (orbitLock.moved) return;
-                onPick();
+                onPick(placementFromClick(event, piece));
               }
             : undefined
         }
@@ -741,7 +774,7 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
           ghost
           bright
           seat={roofHingeY(piece, family)}
-          onPick={() => placeSocket(piece)}
+          onPick={(target) => placeSocket(target)}
         />
       ))}
       {ghosts.map((piece) => (
@@ -755,7 +788,7 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
           guide
           seat={roofHingeY(piece, family)}
           bright={Boolean(held && sameKind(held, piece))}
-          onPick={() => placeTarget(piece)}
+          onPick={(target) => placeTarget(target)}
         />
       ))}
       {silent.map((piece) => (
@@ -768,7 +801,7 @@ function Scene({ yaw, pitch, quiet }: { yaw: number; pitch: number; quiet?: bool
           ghost
           hidden
           seat={roofHingeY(piece, family)}
-          onPick={() => placeTarget(piece)}
+          onPick={(target) => placeTarget(target)}
         />
       ))}
       {placed.map((piece, index) => (
