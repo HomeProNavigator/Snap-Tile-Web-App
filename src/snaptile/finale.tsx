@@ -9,6 +9,12 @@ import { PUZZLES } from "./puzzles";
 import { STICKER_NAMES } from "./stickers";
 import { useSnap, type Win } from "./store";
 
+function bannerFit(text: string) {
+  if (text.length > 16) return "is-sm";
+  if (text.length > 10) return "is-md";
+  return "is-lg";
+}
+
 function stickerFor(puzzleId: number) {
   return STICKER_NAMES[(puzzleId - 1) % STICKER_NAMES.length]!;
 }
@@ -449,8 +455,8 @@ export function FinaleOverlay({ win, show, onSkip }: { win: Win; show: FinaleSho
         <div className="finale-banner is-in">
           <img src={`${base()}celebrate/banner.webp`} alt="" />
           <div className="finale-banner-copy">
-            <strong>{line1}</strong>
-            {line2 ? <span>{line2}</span> : null}
+            <strong className={bannerFit(line1)}>{line1}</strong>
+            {line2 ? <span className={bannerFit(line2)}>{line2}</span> : null}
             {show.buddy && buddyLine ? <em>{buddyLine}!</em> : null}
           </div>
         </div>

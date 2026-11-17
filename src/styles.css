@@ -1437,42 +1437,83 @@
 
 .finale-banner-copy {
   position: absolute;
-  left: 16%;
-  right: 16%;
-  top: 18%;
-  bottom: 24%;
+  left: 19.5%;
+  right: 18.5%;
+  top: 32%;
+  height: 29%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: 2px;
+  gap: 0.06em;
+  padding: 0;
+  pointer-events: none;
 }
 
 .finale-banner-copy strong,
 .finale-banner-copy span,
 .finale-banner-copy em {
+  display: block;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
   font-family: Nunito, ui-sans-serif, sans-serif;
-  color: #fff;
-  line-height: 1.05;
+  font-style: normal;
+  color: #2a1a10;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  text-shadow: none;
+  -webkit-font-smoothing: antialiased;
 }
 
 .finale-banner-copy strong {
   font-weight: 900;
-  font-size: clamp(1.7rem, 7vw, 3.1rem);
-  text-shadow:
-    0 2px 0 #2a1840,
-    2px 0 0 #2a1840,
-    -2px 0 0 #2a1840,
-    0 -2px 0 #2a1840;
+}
+
+.finale-banner-copy strong.is-lg {
+  font-size: clamp(1.7rem, 6.4vw, 2.7rem);
+}
+
+.finale-banner-copy strong.is-md {
+  font-size: clamp(1.28rem, 4.4vw, 2.05rem);
+}
+
+.finale-banner-copy strong.is-sm {
+  font-size: clamp(1.02rem, 3.3vw, 1.52rem);
 }
 
 .finale-banner-copy span,
 .finale-banner-copy em {
-  font-style: normal;
   font-weight: 800;
-  font-size: clamp(0.95rem, 3.4vw, 1.3rem);
-  text-shadow: 0 2px 0 #5a2848;
+  color: #4e3422;
+  letter-spacing: 0.01em;
+}
+
+.finale-banner-copy span.is-lg,
+.finale-banner-copy em {
+  font-size: clamp(0.88rem, 2.85vw, 1.18rem);
+}
+
+.finale-banner-copy span.is-md {
+  font-size: clamp(0.8rem, 2.45vw, 1.02rem);
+}
+
+.finale-banner-copy span.is-sm {
+  font-size: clamp(0.7rem, 2.1vw, 0.9rem);
+}
+
+.finale-banner-copy:has(em) {
+  gap: 0.02em;
+}
+
+.finale-banner-copy:has(em) strong.is-lg {
+  font-size: clamp(1.35rem, 5vw, 2.15rem);
+}
+
+.finale-banner-copy:has(em) span.is-lg {
+  font-size: clamp(0.78rem, 2.35vw, 1rem);
 }
 
 .finale-banner.is-in {
